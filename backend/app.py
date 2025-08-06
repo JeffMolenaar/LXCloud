@@ -145,11 +145,38 @@ def health_check():
 def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
+        origin = request.headers.get('Origin')
+        
+        # Allow requests from common development and local network origins
+        allowed_origins = configure_cors()
+        
+        if origin in allowed_origins or origin is None:
+            response.headers.add("Access-Control-Allow-Origin", origin or "*")
+        else:
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type, Authorization, X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET, POST, PUT, DELETE, OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', "true")
+        response.headers.add('Access-Control-Max-Age', "3600")
         return response
+
+@app.after_request
+def after_request(response):
+    """Add CORS headers to all responses"""
+    origin = request.headers.get('Origin')
+    
+    # Set CORS headers for all responses
+    if origin:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    else:
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    
+    return response
 
 # Authentication routes
 @app.route('/api/register', methods=['POST'])
