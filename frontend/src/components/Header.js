@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -29,7 +31,17 @@ const Header = () => {
     return (
       <header className="header">
         <div className="header-content">
-          <div className="logo">LXCloud</div>
+          <div className="logo">
+            {settings.logoUrl ? (
+              <img 
+                src={settings.logoUrl} 
+                alt={settings.logoText} 
+                style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
+              />
+            ) : (
+              settings.logoText
+            )}
+          </div>
           <nav className="nav-links">
             <Link to="/login" className={`nav-link ${isActiveLink('/login')}`}>
               Login
@@ -46,7 +58,17 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-content">
-        <div className="logo">LXCloud</div>
+        <div className="logo">
+          {settings.logoUrl ? (
+            <img 
+              src={settings.logoUrl} 
+              alt={settings.logoText} 
+              style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
+            />
+          ) : (
+            settings.logoText
+          )}
+        </div>
         <nav className="nav-links">
           <Link to="/" className={`nav-link ${isActiveLink('/')}`}>
             Dashboard
@@ -57,6 +79,11 @@ const Header = () => {
           {(user?.is_admin || user?.is_administrator) && (
             <Link to="/admin" className={`nav-link ${isActiveLink('/admin')}`}>
               Admin Panel
+            </Link>
+          )}
+          {user?.is_admin && (
+            <Link to="/admin/settings" className={`nav-link ${isActiveLink('/admin/settings')}`}>
+              ⚙️ Settings
             </Link>
           )}
           

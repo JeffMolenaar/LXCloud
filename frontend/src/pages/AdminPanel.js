@@ -192,9 +192,10 @@ const AdminPanel = () => {
                             <button
                               className="button button-small"
                               onClick={() => toggleUserAdmin(u.id)}
-                              title={u.is_administrator ? 'Remove Admin' : 'Make Admin'}
+                              title={u.is_administrator ? 'Remove Admin Privileges' : 'Grant Admin Privileges'}
+                              style={{ padding: '8px', minWidth: '36px' }}
                             >
-                              {u.is_administrator ? 'Remove Admin' : 'Make Admin'}
+                              {u.is_administrator ? '👑➖' : '👑➕'}
                             </button>
                             
                             {userScreens.length > 0 && (
@@ -202,27 +203,28 @@ const AdminPanel = () => {
                                 className="button button-small button-secondary"
                                 onClick={() => unbindUserScreens(u.id, u.username)}
                                 title="Unbind all screens from this user"
+                                style={{ padding: '8px', minWidth: '36px' }}
                               >
-                                Unbind Screens
+                                📺🔗
                               </button>
                             )}
                             
                             <button
                               className="button button-small"
-                              style={{ backgroundColor: '#ffc107', borderColor: '#ffc107' }}
+                              style={{ backgroundColor: '#ffc107', borderColor: '#ffc107', padding: '8px', minWidth: '36px' }}
                               onClick={() => openPasswordModal(u)}
                               title="Reset user password"
                             >
-                              Reset Password
+                              🔑
                             </button>
                             
                             <button
                               className="button button-small"
-                              style={{ backgroundColor: '#dc3545', borderColor: '#dc3545' }}
+                              style={{ backgroundColor: '#dc3545', borderColor: '#dc3545', padding: '8px', minWidth: '36px' }}
                               onClick={() => deleteUser(u.id, u.username)}
                               title="Delete user permanently"
                             >
-                              Delete
+                              🗑️
                             </button>
                           </>
                         )}

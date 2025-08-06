@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import Header from './components/Header';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -11,6 +12,7 @@ import Profile from './pages/Profile';
 import ChangePassword from './pages/ChangePassword';
 import TwoFactorSettings from './pages/TwoFactorSettings';
 import AdminPanel from './pages/AdminPanel';
+import AdminSettings from './pages/AdminSettings';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -40,6 +42,24 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const SuperAdminRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (!user?.is_admin) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
+
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
@@ -53,85 +73,95 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Header />
-          <Routes>
-            <Route 
-              path="/login" 
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/register" 
-              element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/screens" 
-              element={
-                <ProtectedRoute>
-                  <ScreenManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/screens/:screenId/data" 
-              element={
-                <ProtectedRoute>
-                  <ScreenData />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/change-password" 
-              element={
-                <ProtectedRoute>
-                  <ChangePassword />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/2fa-settings" 
-              element={
-                <ProtectedRoute>
-                  <TwoFactorSettings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <AdminRoute>
-                  <AdminPanel />
-                </AdminRoute>
-              } 
-            />
-          </Routes>
-        </div>
-      </Router>
+      <SettingsProvider>
+        <Router>
+          <div className="App">
+            <Header />
+            <Routes>
+              <Route 
+                path="/login" 
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                } 
+              />
+              <Route 
+                path="/register" 
+                element={
+                  <PublicRoute>
+                    <Register />
+                  </PublicRoute>
+                } 
+              />
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/screens" 
+                element={
+                  <ProtectedRoute>
+                    <ScreenManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/screens/:screenId/data" 
+                element={
+                  <ProtectedRoute>
+                    <ScreenData />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/change-password" 
+                element={
+                  <ProtectedRoute>
+                    <ChangePassword />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/2fa-settings" 
+                element={
+                  <ProtectedRoute>
+                    <TwoFactorSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <AdminRoute>
+                    <AdminPanel />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/settings" 
+                element={
+                  <SuperAdminRoute>
+                    <AdminSettings />
+                  </SuperAdminRoute>
+                } 
+              />
+            </Routes>
+          </div>
+        </Router>
+      </SettingsProvider>
     </AuthProvider>
   );
 }
