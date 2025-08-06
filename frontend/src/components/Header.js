@@ -59,15 +59,20 @@ const Header = () => {
     <header className="header">
       <div className="header-content">
         <div className="logo">
-          {settings.logoUrl ? (
+          {(settings.logoUrl || uiSettings?.logo_url) ? (
             <img 
-              src={settings.logoUrl} 
+              src={settings.logoUrl || uiSettings?.logo_url} 
               alt={settings.logoText} 
               style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'inline';
+              }}
             />
-          ) : (
-            settings.logoText
-          )}
+          ) : null}
+          <span style={{ display: (settings.logoUrl || uiSettings?.logo_url) ? 'none' : 'inline' }}>
+            {settings.logoText}
+          </span>
         </div>
         <nav className="nav-links">
           <Link to="/" className={`nav-link ${isActiveLink('/')}`}>
@@ -79,11 +84,6 @@ const Header = () => {
           {(user?.is_admin || user?.is_administrator) && (
             <Link to="/admin" className={`nav-link ${isActiveLink('/admin')}`}>
               Admin Panel
-            </Link>
-          )}
-          {user?.is_admin && (
-            <Link to="/admin/settings" className={`nav-link ${isActiveLink('/admin/settings')}`}>
-              ⚙️ Settings
             </Link>
           )}
           
