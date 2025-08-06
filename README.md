@@ -266,14 +266,74 @@ CREATE TABLE screen_data (
 
 ## Configuration
 
-### Environment Variables
-You can configure the application using environment variables:
+### Database Configuration
+The application supports environment variables for database configuration. This allows you to configure the database without modifying the source code.
 
+#### Environment Variables
 - `DB_HOST` - Database host (default: localhost)
 - `DB_USER` - Database user (default: lxcloud)
 - `DB_PASS` - Database password (default: lxcloud123)
 - `DB_NAME` - Database name (default: lxcloud)
 - `SECRET_KEY` - Flask secret key (change in production)
+
+#### Setting Environment Variables
+
+**Option 1: Export in shell**
+```bash
+export DB_HOST=localhost
+export DB_USER=lxcloud
+export DB_PASS=your_password
+export DB_NAME=lxcloud
+python3 app.py
+```
+
+**Option 2: Use configuration file**
+```bash
+# Create a configuration file
+cp backend/db_config_example.sh backend/db_config.sh
+# Edit the values in db_config.sh
+source backend/db_config.sh
+python3 app.py
+```
+
+**Option 3: Systemd service with environment file**
+```bash
+# Create environment file
+echo "DB_PASS=your_password" > /opt/lxcloud/backend/.env
+# Update service file to use EnvironmentFile=/opt/lxcloud/backend/.env
+```
+
+#### Troubleshooting Database Connection
+
+If you encounter the error:
+```
+pymysql.err.OperationalError: (1045, "Access denied for user 'lxcloud'@'localhost' (using password: YES)")
+```
+
+This means the database user doesn't exist or has incorrect credentials. Fix by:
+
+1. **Create the database user:**
+```bash
+sudo mysql << EOF
+CREATE DATABASE IF NOT EXISTS lxcloud;
+CREATE USER IF NOT EXISTS 'lxcloud'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON lxcloud.* TO 'lxcloud'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+```
+
+2. **Set the correct password in environment:**
+```bash
+export DB_PASS=your_password
+```
+
+3. **For existing installations, update the password:**
+```bash
+sudo mysql << EOF
+ALTER USER 'lxcloud'@'localhost' IDENTIFIED BY 'new_password';
+FLUSH PRIVILEGES;
+EOF
+```
 
 ### Data Retention
 The system automatically stores data by year and provides mechanisms for yearly data cleanup. Old data can be removed by deleting records where `year < current_year`.
@@ -321,9 +381,44 @@ sudo tail -f /var/log/nginx/error.log
 
 ### Common Issues
 1. **Database Connection**: Check MariaDB service and credentials
+   - Error: `Access denied for user 'lxcloud'@'localhost'`
+   - Solution: Ensure database user exists and password matches environment variable
+   - Check: `sudo systemctl status mysql` or `sudo systemctl status mariadb`
+   - Fix: Set `DB_PASS` environment variable or recreate database user
 2. **Port Conflicts**: Ensure ports 80, 3000, 5000 are available
 3. **Permissions**: Check file permissions in application directory
 4. **Firewall**: Verify firewall rules allow HTTP traffic
+
+### Database Connection Troubleshooting
+If the backend fails to start with database connection errors:
+
+1. **Check database service:**
+```bash
+sudo systemctl status mysql
+# or
+sudo systemctl status mariadb
+```
+
+2. **Test database connection:**
+```bash
+mysql -u lxcloud -p lxcloud
+# Enter password when prompted
+```
+
+3. **Check environment variables:**
+```bash
+echo $DB_USER $DB_PASS $DB_NAME
+```
+
+4. **Recreate database user if needed:**
+```bash
+sudo mysql << EOF
+DROP USER IF EXISTS 'lxcloud'@'localhost';
+CREATE USER 'lxcloud'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON lxcloud.* TO 'lxcloud'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+```
 
 ## Development
 
