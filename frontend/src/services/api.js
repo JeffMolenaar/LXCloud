@@ -1,6 +1,25 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Dynamic API base URL for local network access
+const getApiBaseUrl = () => {
+  // If running in development with a specific backend URL
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // For production, use the same host as the frontend
+  if (process.env.NODE_ENV === 'production') {
+    return `${window.location.protocol}//${window.location.host}/api`;
+  }
+  
+  // For development, try to detect the backend server
+  // Default to localhost, but allow override via environment
+  const backendHost = process.env.REACT_APP_BACKEND_HOST || window.location.hostname;
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || '5000';
+  return `http://${backendHost}:${backendPort}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, make_response
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,9 +8,48 @@ from datetime import datetime, timedelta
 import json
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'lxcloud-secret-key-change-in-production'
-CORS(app, supports_credentials=True)
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'lxcloud-secret-key-change-in-production')
+
+# Configure session for better security and local network access
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+
+# CORS configuration for local network access
+def configure_cors():
+    """Configure CORS origins dynamically"""
+    allowed_origins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost',
+        'http://127.0.0.1'
+    ]
+    
+    # Add local network IPs if available
+    try:
+        import socket
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        if local_ip and local_ip != '127.0.0.1':
+            allowed_origins.extend([
+                f'http://{local_ip}',
+                f'http://{local_ip}:3000'
+            ])
+    except:
+        pass
+    
+    return allowed_origins
+
+CORS(app, 
+     supports_credentials=True,
+     origins=configure_cors(),
+     allow_headers=['Content-Type', 'Authorization'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+
+socketio = SocketIO(app, 
+                   cors_allowed_origins="*",
+                   async_mode='threading')
 
 # Database configuration with environment variable support
 DB_CONFIG = {
@@ -75,111 +114,192 @@ def init_database():
     cursor.close()
     conn.close()
 
+# Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0.0'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+# Handle preflight requests for CORS
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        response.headers.add('Access-Control-Allow-Credentials', "true")
+        return response
+
 # Authentication routes
 @app.route('/api/register', methods=['POST'])
 def register():
     """User registration endpoint"""
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    
-    if not all([username, email, password]):
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if user exists
-    cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", (username, email))
-    if cursor.fetchone():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        
+        # Validation
+        if not all([username, email, password]):
+            return jsonify({'error': 'Username, email, and password are required'}), 400
+        
+        if len(username) < 3:
+            return jsonify({'error': 'Username must be at least 3 characters long'}), 400
+            
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+        
+        # Basic email validation
+        if '@' not in email or '.' not in email:
+            return jsonify({'error': 'Please provide a valid email address'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists
+        cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", (username, email))
+        existing_user = cursor.fetchone()
+        if existing_user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Username or email already exists'}), 400
+        
+        # Create user
+        password_hash = generate_password_hash(password)
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+            (username, email, password_hash)
+        )
+        
+        user_id = cursor.lastrowid
+        conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'error': 'User already exists'}), 400
-    
-    # Create user
-    password_hash = generate_password_hash(password)
-    cursor.execute(
-        "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
-        (username, email, password_hash)
-    )
-    
-    user_id = cursor.lastrowid
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    session['user_id'] = user_id
-    session['username'] = username
-    
-    return jsonify({
-        'message': 'User registered successfully',
-        'user': {'id': user_id, 'username': username, 'email': email}
-    }), 201
+        
+        # Set session
+        session.permanent = True
+        session['user_id'] = user_id
+        session['username'] = username
+        
+        return jsonify({
+            'message': 'User registered successfully',
+            'user': {'id': user_id, 'username': username, 'email': email}
+        }), 201
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
     """User login endpoint"""
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    if not all([username, password]):
-        return jsonify({'error': 'Missing username or password'}), 400
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT id, username, email, password_hash FROM users WHERE username = %s OR email = %s",
-        (username, username)
-    )
-    user = cursor.fetchone()
-    
-    cursor.close()
-    conn.close()
-    
-    if not user or not check_password_hash(user[3], password):
-        return jsonify({'error': 'Invalid credentials'}), 401
-    
-    session['user_id'] = user[0]
-    session['username'] = user[1]
-    
-    return jsonify({
-        'message': 'Login successful',
-        'user': {'id': user[0], 'username': user[1], 'email': user[2]}
-    }), 200
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        
+        if not all([username, password]):
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "SELECT id, username, email, password_hash FROM users WHERE username = %s OR email = %s",
+            (username, username)
+        )
+        user = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not user or not check_password_hash(user[3], password):
+            return jsonify({'error': 'Invalid username/email or password'}), 401
+        
+        # Set session
+        session.permanent = True
+        session['user_id'] = user[0]
+        session['username'] = user[1]
+        
+        return jsonify({
+            'message': 'Login successful',
+            'user': {'id': user[0], 'username': user[1], 'email': user[2]}
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Login failed: {str(e)}'}), 500
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
     """User logout endpoint"""
-    session.clear()
-    return jsonify({'message': 'Logged out successfully'}), 200
+    try:
+        session.clear()
+        return jsonify({'message': 'Logged out successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Logout failed: {str(e)}'}), 500
 
 @app.route('/api/user', methods=['GET'])
 def get_current_user():
     """Get current logged in user"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT id, username, email FROM users WHERE id = %s",
-        (session['user_id'],)
-    )
-    user = cursor.fetchone()
-    
-    cursor.close()
-    conn.close()
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    return jsonify({
-        'user': {'id': user[0], 'username': user[1], 'email': user[2]}
-    }), 200
+    try:
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "SELECT id, username, email FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not user:
+            session.clear()  # Clear invalid session
+            return jsonify({'error': 'User not found'}), 404
+        
+        return jsonify({
+            'user': {'id': user[0], 'username': user[1], 'email': user[2]}
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to get user: {str(e)}'}), 500
 
 # Screen management routes
 @app.route('/api/screens', methods=['GET'])
