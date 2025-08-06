@@ -386,10 +386,10 @@ def get_version():
             'error': f'Could not retrieve full version info: {str(e)}'
         }), 200
 
-# Controller registration endpoint (encrypted API for controllers)
+# Controller registration endpoint (secured API for controllers)
 @app.route('/api/controller/register', methods=['POST'])
 def controller_register():
-    """Controller registration endpoint for devices to register themselves"""
+    """Secure controller registration endpoint for devices to register themselves"""
     try:
         data = request.get_json()
         if not data:
@@ -398,30 +398,42 @@ def controller_register():
         serial_number = data.get('serial_number', '').strip()
         latitude = data.get('latitude')
         longitude = data.get('longitude')
+        auth_key = data.get('auth_key', '').strip()
         
         if not serial_number:
             return jsonify({'error': 'Serial number is required'}), 400
+        
+        # Simple authentication for controllers
+        # In production, you would use proper JWT tokens or API keys
+        expected_auth_key = hashlib.sha256(f"lxcloud-controller-{serial_number}".encode()).hexdigest()[:16]
+        if auth_key and auth_key != expected_auth_key:
+            return jsonify({'error': 'Invalid authentication key'}), 401
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
         # Check if controller already exists
-        cursor.execute("SELECT id FROM controllers WHERE serial_number = %s", (serial_number,))
+        cursor.execute("SELECT id, assigned FROM controllers WHERE serial_number = %s", (serial_number,))
         existing = cursor.fetchone()
         
         if existing:
-            # Update existing controller
+            # Update existing controller location and status
             cursor.execute("""
                 UPDATE controllers 
                 SET latitude = %s, longitude = %s, online_status = TRUE, last_seen = CURRENT_TIMESTAMP
                 WHERE serial_number = %s
             """, (latitude, longitude, serial_number))
+            
+            # Get registration key for response
+            cursor.execute("SELECT registration_key FROM controllers WHERE serial_number = %s", (serial_number,))
+            reg_key_result = cursor.fetchone()
+            registration_key = reg_key_result[0] if reg_key_result else None
         else:
-            # Create new controller
+            # Create new controller with registration key
             registration_key = generate_registration_key()
             cursor.execute("""
-                INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status)
-                VALUES (%s, %s, %s, %s, TRUE)
+                INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status, assigned)
+                VALUES (%s, %s, %s, %s, TRUE, FALSE)
             """, (serial_number, registration_key, latitude, longitude))
         
         conn.commit()
@@ -430,7 +442,10 @@ def controller_register():
         
         return jsonify({
             'message': 'Controller registered successfully',
-            'serial_number': serial_number
+            'serial_number': serial_number,
+            'registration_key': registration_key,
+            'expected_auth_key': expected_auth_key,
+            'status': 'awaiting_assignment'
         }), 200
         
     except pymysql.Error as e:
