@@ -12,6 +12,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Configuration flags
+CLEAN_OLD_DATA=false
+INTERACTIVE_MODE=true
+
 # Logging function
 log() {
     echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
@@ -29,6 +33,77 @@ warning() {
 info() {
     echo -e "${BLUE}[INFO] $1${NC}"
 }
+
+# Function to clean old data
+cleanup_old_data() {
+    log "Cleaning up old LXCloud data..."
+    
+    # Stop services if running
+    sudo systemctl stop lxcloud-backend 2>/dev/null || true
+    sudo systemctl stop nginx 2>/dev/null || true
+    
+    # Drop and recreate database
+    sudo mysql -u root -plxcloud123 <<EOF
+DROP DATABASE IF EXISTS lxcloud;
+CREATE DATABASE lxcloud;
+GRANT ALL PRIVILEGES ON lxcloud.* TO 'lxcloud'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+    
+    # Remove old application directory if it exists
+    if [ -d "/opt/lxcloud" ]; then
+        sudo rm -rf /opt/lxcloud
+        log "Removed old application directory"
+    fi
+    
+    # Remove old systemd service
+    if [ -f "/etc/systemd/system/lxcloud-backend.service" ]; then
+        sudo systemctl disable lxcloud-backend 2>/dev/null || true
+        sudo rm -f /etc/systemd/system/lxcloud-backend.service
+        sudo systemctl daemon-reload
+        log "Removed old systemd service"
+    fi
+    
+    # Remove old nginx configuration
+    if [ -f "/etc/nginx/sites-available/lxcloud" ]; then
+        sudo rm -f /etc/nginx/sites-available/lxcloud
+        sudo rm -f /etc/nginx/sites-enabled/lxcloud
+        log "Removed old nginx configuration"
+    fi
+    
+    log "Old data cleanup completed"
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clean-data)
+            CLEAN_OLD_DATA=true
+            shift
+            ;;
+        --non-interactive)
+            INTERACTIVE_MODE=false
+            shift
+            ;;
+        -h|--help)
+            echo "LXCloud Installation Script"
+            echo ""
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  --clean-data        Clean all old LXCloud data before installation"
+            echo "  --non-interactive   Run without interactive prompts"
+            echo "  -h, --help          Show this help message"
+            echo ""
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
@@ -56,6 +131,49 @@ if ! grep -q "Ubuntu 22.04" /etc/os-release; then
 fi
 
 log "Starting LXCloud installation..."
+
+# Interactive data cleanup prompt
+if [ "$INTERACTIVE_MODE" = true ] && [ "$CLEAN_OLD_DATA" = false ]; then
+    echo
+    warning "IMPORTANT: Data Cleanup Options"
+    echo
+    info "This installer can clean up any existing LXCloud data before installation."
+    info "This includes:"
+    info "  - Database records (users, screens, data)"
+    info "  - Application files"
+    info "  - Configuration files"
+    echo
+    echo "Choose an option:"
+    echo "1. Clean install (remove all old data) - RECOMMENDED for fresh start"
+    echo "2. Keep existing data (may cause conflicts)"
+    echo "3. Exit and backup data manually"
+    echo
+    read -p "Enter your choice (1-3): " -n 1 -r
+    echo
+    echo
+    
+    case $REPLY in
+        1)
+            CLEAN_OLD_DATA=true
+            log "Will perform clean installation"
+            ;;
+        2)
+            log "Will keep existing data"
+            ;;
+        3)
+            info "Installation cancelled. Please backup your data and run the script again."
+            exit 0
+            ;;
+        *)
+            warning "Invalid choice. Defaulting to keep existing data."
+            ;;
+    esac
+fi
+
+# Perform data cleanup if requested
+if [ "$CLEAN_OLD_DATA" = true ]; then
+    cleanup_old_data
+fi
 
 # Update system packages
 log "Updating system packages..."
@@ -173,16 +291,25 @@ EOF
 
 # Configure Nginx
 log "Configuring Nginx..."
+
+# Get the server's IP address for network access info
+SERVER_IP=$(hostname -I | awk '{print $1}')
+
 sudo tee /etc/nginx/sites-available/lxcloud > /dev/null <<EOF
 server {
     listen 80;
-    server_name _;
+    server_name _ $SERVER_IP;
 
     # Frontend static files
     location / {
         root $APP_DIR/frontend/dist;
         index index.html;
         try_files \$uri \$uri/ /index.html;
+        
+        # Add headers for local network access
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
     }
 
     # Backend API
@@ -192,6 +319,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers for API
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        
+        # Handle preflight requests
+        if (\$request_method = 'OPTIONS') {
+            return 204;
+        }
     }
 
     # WebSocket support
@@ -322,7 +460,8 @@ else
 fi
 
 # Get server IP
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
+SERVER_IP=$(hostname -I | awk '{print $1}')
+PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo "Unable to determine")
 
 log "Installation completed successfully!"
 info ""
@@ -333,8 +472,16 @@ info ""
 info "Your LXCloud platform is now ready!"
 info ""
 info "Access URLs:"
-info "  Web Interface: http://$SERVER_IP"
-info "  Local Access:  http://localhost"
+info "  Local Access:      http://localhost"
+info "  Network Access:    http://$SERVER_IP"
+if [ "$PUBLIC_IP" != "Unable to determine" ] && [ "$PUBLIC_IP" != "$SERVER_IP" ]; then
+info "  Public Access:     http://$PUBLIC_IP (if firewall allows)"
+fi
+info ""
+info "For local network access from other devices:"
+info "  1. Ensure devices are on the same network"
+info "  2. Use the Network Access URL above"
+info "  3. Make sure firewall allows port 80"
 info ""
 info "Default Database Credentials:"
 info "  Database: lxcloud"
@@ -352,17 +499,27 @@ info "Demo Data:"
 info "  To create demo screens and data, run:"
 info "  cd $APP_DIR && python3 create_demo_data.py"
 info ""
+info "Data Management:"
+info "  Clean old data:  cd $APP_DIR && python3 cleanup_data.py"
+info "  Backup database: mysqldump -u lxcloud -plxcloud123 lxcloud > backup.sql"
+info ""
 info "Configuration Files:"
 info "  Application:     $APP_DIR"
 info "  Nginx Config:    /etc/nginx/sites-available/lxcloud"
 info "  Service File:    /etc/systemd/system/lxcloud-backend.service"
 info ""
 info "Next Steps:"
-info "1. Visit http://$SERVER_IP to access the web interface"
+info "1. Visit one of the access URLs above"
 info "2. Register a new user account"
 info "3. Add your LED screens using their serial numbers"
 info "4. Configure your Android devices to send data to:"
 info "   http://$SERVER_IP/api/device/update"
+info ""
+info "Troubleshooting:"
+info "  If you can't access from other devices:"
+info "  - Check firewall: sudo ufw status"
+info "  - Verify network connectivity: ping $SERVER_IP"
+info "  - Check services: sudo systemctl status lxcloud-backend nginx"
 info ""
 info "==================================================================="
 
