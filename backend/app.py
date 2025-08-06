@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, make_response
+from flask import Flask, request, jsonify, session, make_response, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -36,14 +36,40 @@ def configure_cors():
                 f'http://{local_ip}',
                 f'http://{local_ip}:3000'
             ])
+            
+        # Add common local network ranges for better compatibility
+        import netifaces
+        for interface in netifaces.interfaces():
+            try:
+                addrs = netifaces.ifaddresses(interface)
+                for addr_family in addrs:
+                    for addr_info in addrs[addr_family]:
+                        if 'addr' in addr_info:
+                            ip = addr_info['addr']
+                            # Add common private network ranges
+                            if (ip.startswith('192.168.') or 
+                                ip.startswith('10.') or 
+                                ip.startswith('172.')):
+                                allowed_origins.extend([
+                                    f'http://{ip}',
+                                    f'http://{ip}:3000',
+                                    f'http://{ip}:80'
+                                ])
+            except:
+                pass
+    except ImportError:
+        # netifaces not available, use basic method
+        pass
     except:
         pass
     
     return allowed_origins
 
+# For local network compatibility, allow all origins in development
+# In production, this should be more restrictive
 CORS(app, 
      supports_credentials=True,
-     origins=configure_cors(),
+     origins="*",  # Allow all origins for local network testing
      allow_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
@@ -61,58 +87,73 @@ DB_CONFIG = {
 }
 
 def get_db_connection():
-    """Get database connection"""
-    return pymysql.connect(**DB_CONFIG)
+    """Get database connection with error handling"""
+    try:
+        return pymysql.connect(**DB_CONFIG)
+    except Exception as e:
+        print(f"Database connection failed: {e}")
+        print("Please ensure MariaDB/MySQL is running and credentials are correct")
+        raise
 
 def init_database():
     """Initialize database with required tables"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    # Screens table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS screens (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            serial_number VARCHAR(100) UNIQUE NOT NULL,
-            user_id INT,
-            custom_name VARCHAR(100),
-            latitude DECIMAL(10, 8),
-            longitude DECIMAL(11, 8),
-            online_status BOOLEAN DEFAULT FALSE,
-            last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    """)
-    
-    # Screen data table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS screen_data (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            screen_id INT,
-            information TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            year INT,
-            FOREIGN KEY (screen_id) REFERENCES screens(id) ON DELETE CASCADE,
-            INDEX idx_year (year),
-            INDEX idx_timestamp (timestamp)
-        )
-    """)
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Screens table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS screens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                serial_number VARCHAR(100) UNIQUE NOT NULL,
+                user_id INT,
+                custom_name VARCHAR(100),
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                online_status BOOLEAN DEFAULT FALSE,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # Screen data table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS screen_data (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                screen_id INT,
+                information TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                year INT,
+                FOREIGN KEY (screen_id) REFERENCES screens(id) ON DELETE CASCADE,
+                INDEX idx_year (year),
+                INDEX idx_timestamp (timestamp)
+            )
+        """)
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Database initialized successfully")
+        
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+        print("The application will run but database features will not work")
+        print("To fix this issue:")
+        print("1. Install and start MariaDB/MySQL")
+        print("2. Create database and user as described in README.md")
+        print("3. Or use the install.sh script for automatic setup")
 
 # Health check endpoint
 @app.route('/api/health', methods=['GET'])
@@ -125,20 +166,53 @@ def health_check():
         cursor.execute("SELECT 1")
         cursor.close()
         conn.close()
+        db_status = 'connected'
+    except Exception as e:
+        db_status = f'disconnected ({str(e)})'
         
-        return jsonify({
-            'status': 'healthy',
-            'database': 'connected',
-            'timestamp': datetime.now().isoformat(),
-            'version': '1.0.0'
-        }), 200
+    return jsonify({
+        'status': 'healthy',
+        'database': db_status,
+        'timestamp': datetime.now().isoformat(),
+        'version': '1.0.0'
+    }), 200
+
+# Optional: Serve frontend if no nginx is configured
+@app.route('/')
+def serve_frontend_fallback():
+    """Serve frontend as fallback if no nginx configured"""
+    try:
+        frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+        return send_from_directory(frontend_path, 'index.html')
     except Exception as e:
         return jsonify({
-            'status': 'unhealthy',
-            'database': 'disconnected',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
-        }), 500
+            'message': 'LXCloud Backend API',
+            'status': 'running',
+            'note': 'Frontend not found. Please build frontend and configure nginx, or access API directly.',
+            'frontend_build': 'Run: cd frontend && npm run build',
+            'nginx_setup': 'See README.md for nginx configuration'
+        }), 200
+
+@app.route('/<path:path>')
+def serve_frontend_static(path):
+    """Serve frontend static files as fallback"""
+    try:
+        frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+        return send_from_directory(frontend_path, path)
+    except:
+        # Return JSON for API-like requests, fallback for others
+        if path.startswith('api/'):
+            return jsonify({'error': 'API endpoint not found'}), 404
+        else:
+            # For frontend routes, serve index.html (React Router)
+            try:
+                frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+                return send_from_directory(frontend_path, 'index.html')
+            except:
+                return jsonify({
+                    'error': 'Frontend not found',
+                    'note': 'Please build frontend: cd frontend && npm run build'
+                }), 404
 
 # Handle preflight requests for CORS
 @app.before_request
@@ -581,5 +655,25 @@ def handle_disconnect():
     print('Client disconnected')
 
 if __name__ == '__main__':
-    init_database()
+    print("=" * 60)
+    print("LXCloud Backend Starting")
+    print("=" * 60)
+    
+    # Try to initialize database, but continue even if it fails
+    try:
+        init_database()
+    except Exception as e:
+        print(f"Warning: Database initialization failed: {e}")
+        print("Application will start but some features may not work")
+        print("See above for instructions to fix database issues")
+    
+    print("")
+    print("Starting Flask application on:")
+    print("  - http://localhost:5000 (API)")
+    print("  - All interfaces (0.0.0.0:5000)")
+    print("")
+    print("Make sure the frontend is built and served separately")
+    print("or use nginx configuration as described in README.md")
+    print("=" * 60)
+    
     socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
