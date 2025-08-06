@@ -9,6 +9,7 @@ env/
 venv/
 .env
 .venv
+test_env/
 
 # Build outputs
 frontend/dist/

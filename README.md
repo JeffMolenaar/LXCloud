@@ -5,30 +5,44 @@ A complete cloud platform for managing LED screens with Android controllers. Fea
 ## Features
 
 ### 🎯 Core Functionality
-- **User Authentication**: Secure login/register system
+- **Secure Controller Registration**: Controllers register via encrypted API with authentication keys
+- **User Authentication**: Secure login/register system with 2FA support
 - **Map Dashboard**: Interactive map showing all screen locations with real-time status
 - **Screen Management**: Add, edit, delete, and monitor LED screens
 - **Real-time Updates**: WebSocket-based live updates for screen status and data
 - **Data Analytics**: View and export screen data in JSON format
 - **Custom Naming**: Assign custom names to screens linked to serial numbers
 
+### 🔐 Security & Access Control
+- **Super Admin Account**: Master admin account with full system access
+- **Administrator Flags**: Regular users can be granted administrator privileges
+- **Controller Assignment**: Controllers can only be assigned to one user at a time
+- **Data Privacy**: Controllers only store data when assigned to a user
+- **API Authentication**: Secure authentication keys for controller registration
+
 ### 🖥️ User Interface
 - **Responsive Design**: Works on desktop, tablet, and mobile
 - **Interactive Map**: Click on screen markers to view detailed information
+- **User Dropdown**: Access password change and 2FA settings from header
+- **Admin Panel**: Comprehensive user and controller management
 - **Bulk Operations**: Select multiple screens for batch operations
 - **Real-time Status**: Live online/offline status indicators
 - **Data Export**: Download screen data as JSON files
 
 ### 🔧 Technical Stack
-- **Backend**: Python Flask with WebSocket support
+- **Backend**: Python Flask with WebSocket support and secure API endpoints
 - **Frontend**: React.js with Leaflet maps
-- **Database**: MariaDB with yearly data retention
+- **Database**: MariaDB with automatic migrations and yearly data retention
 - **Real-time**: Socket.io for live updates
-- **Authentication**: Session-based with password hashing
+- **Authentication**: Session-based with password hashing and 2FA support
 
-### 📱 Android Integration
-- **API Endpoint**: `/api/device/update` for Android devices
+### 📱 Controller Integration
+- **API Registration**: `/api/controller/register` for secure device registration
+- **Authentication**: SHA256-based authentication keys for controllers
+- **Background Operation**: Controllers work in background until assigned
+- **Assignment Workflow**: Users assign controllers by entering serial numbers
 - **Data Collection**: Location, serial number, status, and custom information
+- **Conditional Storage**: Data only stored when controllers are assigned to users
 - **Real-time Sync**: Immediate updates to dashboard when devices send data
 
 ## Quick Installation (Ubuntu Server 22.04)
@@ -42,6 +56,30 @@ git clone https://github.com/JeffMolenaar/LXCloud.git
 cd LXCloud
 chmod +x install.sh
 ./install.sh
+```
+
+### Complete Clean Installation
+
+To perform a completely fresh installation that removes all existing data:
+
+```bash
+cd LXCloud
+git pull origin main
+./install.sh --clean-data
+```
+
+This will:
+- Drop and recreate the entire database
+- Remove all user accounts, controllers, and screen data
+- Perform a fresh installation from scratch
+
+### Database Reset
+
+For resetting just the database while keeping the application:
+
+```bash
+cd LXCloud
+./reset_database.sh
 ```
 
 ### Updating Existing Installation
@@ -214,37 +252,66 @@ sudo systemctl restart nginx
 
 ## Usage
 
-### 1. User Registration
+### 1. Initial Setup
+
+#### Create Admin Account
+After installation, create the initial admin account:
+
+**Option 1: Via API**
+```bash
+curl -X POST http://your-server:5000/api/admin/create-admin \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username": "admin",
+    "email": "admin@example.com",
+    "password": "your-secure-password",
+    "admin_key": "lxcloud-admin-setup-2024"
+  }'
+```
+
+**Option 2: Via Web Interface**
+1. Visit your server IP in a web browser
+2. Click "Register" to create an account
+3. The first registered user will have admin privileges
+
+### 2. Controller Registration & Assignment
+
+#### Controller Registration (for device developers)
+Controllers (LED screens with Android devices) can register themselves:
+
+```bash
+# Calculate authentication key for controller
+SERIAL="SCREEN001"
+AUTH_KEY=$(echo -n "lxcloud-controller-$SERIAL" | sha256sum | cut -c1-16)
+
+# Register controller
+curl -X POST http://your-server:5000/api/controller/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "serial_number": "'$SERIAL'",
+    "latitude": 52.3676,
+    "longitude": 4.9041,
+    "auth_key": "'$AUTH_KEY'"
+  }'
+```
+
+#### Assigning Controllers to Users
+1. Log in to the web interface
+2. Controllers register in the background and appear in admin panel
+3. Users can assign controllers by entering the serial number in "Manage Screens"
+4. Once assigned, controllers will start storing data
+
+### 3. User Registration
 1. Visit the web interface
 2. Click "Register" to create a new account
 3. Fill in username, email, and password
-
-### 2. Adding Screens
-1. Log in to the dashboard
-2. Click the "+" button to add a new screen
-3. Enter the serial number and optional custom name
-4. The screen will appear on the map once it sends location data
-
-### 3. Android Device Configuration
-Configure your Android devices to send POST requests to:
-```
-http://your-server/api/device/update
-```
-
-With JSON payload:
-```json
-{
-  "serial_number": "SCREEN001",
-  "latitude": 52.3676,
-  "longitude": 4.9041,
-  "information": "Optional status message"
-}
-```
+4. Admin can grant administrator privileges to users
 
 ### 4. Managing Screens
-- **Dashboard**: View all screens on an interactive map
+- **Dashboard**: View all assigned screens on an interactive map
 - **Screen Management**: Bulk operations, editing, and deletion
 - **Data View**: Click on screens to view detailed data and export JSON
+- **Admin Panel**: View all controllers (assigned and unassigned)
 
 ## API Documentation
 
@@ -253,16 +320,46 @@ With JSON payload:
 - `POST /api/login` - User login
 - `POST /api/logout` - User logout
 - `GET /api/user` - Get current user info
+- `POST /api/user/change-password` - Change user password
+- `POST /api/user/2fa/setup` - Setup 2FA
+- `POST /api/user/2fa/verify` - Verify and enable 2FA
+- `POST /api/user/2fa/disable` - Disable 2FA
 
 ### Screen Management
-- `GET /api/screens` - Get user's screens
-- `POST /api/screens` - Add new screen
+- `GET /api/screens` - Get user's screens (or all screens for admin)
+- `POST /api/screens` - Add/assign new screen by serial number
 - `PUT /api/screens/{id}` - Update screen
 - `DELETE /api/screens/{id}` - Delete screen
 - `GET /api/screens/{id}/data` - Get screen data
 
-### Device Integration
-- `POST /api/device/update` - Android device data update
+### Controller Integration
+- `POST /api/controller/register` - Secure controller registration
+  ```json
+  {
+    "serial_number": "DEVICE001",
+    "latitude": 52.3676,
+    "longitude": 4.9041,
+    "auth_key": "calculated_auth_key"
+  }
+  ```
+- `POST /api/device/update` - Device data update (stores data only if assigned)
+  ```json
+  {
+    "serial_number": "DEVICE001",
+    "latitude": 52.3676,
+    "longitude": 4.9041,
+    "information": "Status message"
+  }
+  ```
+
+### Admin Endpoints
+- `POST /api/admin/create-admin` - Create initial admin account
+- `GET /api/admin/users` - Get all users (admin only)
+- `POST /api/admin/users/{id}/toggle-admin` - Toggle administrator flag
+
+### System Endpoints
+- `GET /api/health` - Health check
+- `GET /api/version` - Get version and installation info
 
 ## Database Schema
 
@@ -273,11 +370,30 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
+    is_administrator BOOLEAN DEFAULT FALSE,
+    two_fa_enabled BOOLEAN DEFAULT FALSE,
+    two_fa_secret VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-### Screens Table
+### Controllers Table (Unassigned Devices)
+```sql
+CREATE TABLE controllers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    serial_number VARCHAR(100) UNIQUE NOT NULL,
+    registration_key VARCHAR(255) NOT NULL,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    online_status BOOLEAN DEFAULT FALSE,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    assigned BOOLEAN DEFAULT FALSE
+);
+```
+
+### Screens Table (Assigned to Users)
 ```sql
 CREATE TABLE screens (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -289,11 +405,11 @@ CREATE TABLE screens (
     online_status BOOLEAN DEFAULT FALSE,
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 ```
 
-### Screen Data Table
+### Screen Data Table (Only for Assigned Screens)
 ```sql
 CREATE TABLE screen_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -301,8 +417,30 @@ CREATE TABLE screen_data (
     information TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     year INT,
-    FOREIGN KEY (screen_id) REFERENCES screens(id),
-    INDEX idx_year (year)
+    FOREIGN KEY (screen_id) REFERENCES screens(id) ON DELETE CASCADE,
+    INDEX idx_year (year),
+    INDEX idx_timestamp (timestamp)
+);
+```
+
+### Schema Version Table
+```sql
+CREATE TABLE schema_version (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    version INT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### App Info Table
+```sql
+CREATE TABLE app_info (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    app_version VARCHAR(20) NOT NULL,
+    install_type ENUM('fresh', 'update') NOT NULL,
+    previous_version VARCHAR(20),
+    installed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT
 );
 ```
 
