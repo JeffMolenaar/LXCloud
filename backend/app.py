@@ -132,7 +132,7 @@ def generate_registration_key():
     return secrets.token_urlsafe(32)
 
 # Application version
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 DATABASE_VERSION = 2
 
 def get_database_version():
@@ -595,7 +595,7 @@ def register():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """User login endpoint"""
+    """User login endpoint with 2FA support"""
     try:
         data = request.get_json()
         if not data:
@@ -603,6 +603,7 @@ def login():
             
         username = data.get('username', '').strip()
         password = data.get('password', '')
+        two_fa_token = data.get('two_fa_token', '').strip()
         
         if not all([username, password]):
             return jsonify({'error': 'Username and password are required'}), 400
@@ -611,7 +612,7 @@ def login():
         cursor = conn.cursor()
         
         cursor.execute(
-            "SELECT id, username, email, password_hash FROM users WHERE username = %s OR email = %s",
+            "SELECT id, username, email, password_hash, two_fa_enabled, two_fa_secret, is_admin, is_administrator FROM users WHERE username = %s OR email = %s",
             (username, username)
         )
         user = cursor.fetchone()
@@ -622,6 +623,23 @@ def login():
         if not user or not check_password_hash(user[3], password):
             return jsonify({'error': 'Invalid username/email or password'}), 401
         
+        # Check if 2FA is enabled for this user
+        if user[4]:  # two_fa_enabled
+            if not two_fa_token:
+                # 2FA is enabled but no token provided - request 2FA token
+                return jsonify({
+                    'requires_2fa': True,
+                    'message': 'Two-factor authentication required'
+                }), 200
+            
+            # Verify 2FA token
+            if not user[5]:  # two_fa_secret
+                return jsonify({'error': '2FA is enabled but secret is missing. Please contact administrator.'}), 500
+            
+            totp = pyotp.TOTP(user[5])
+            if not totp.verify(two_fa_token):
+                return jsonify({'error': 'Invalid 2FA token'}), 401
+        
         # Set session
         session.permanent = True
         session['user_id'] = user[0]
@@ -629,7 +647,14 @@ def login():
         
         return jsonify({
             'message': 'Login successful',
-            'user': {'id': user[0], 'username': user[1], 'email': user[2]}
+            'user': {
+                'id': user[0], 
+                'username': user[1], 
+                'email': user[2],
+                'is_admin': bool(user[6]),
+                'is_administrator': bool(user[7]),
+                'two_fa_enabled': bool(user[4])
+            }
         }), 200
         
     except pymysql.Error as e:
@@ -1414,6 +1439,171 @@ def create_admin():
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Admin creation failed: {str(e)}'}), 500
+
+@app.route('/api/admin/users/<int:user_id>/unbind-screens', methods=['POST'])
+def admin_unbind_user_screens(user_id):
+    """Unbind all screens from a user (admin only)"""
+    admin_check, admin_response, admin_status = require_admin()
+    if not admin_check:
+        return admin_response, admin_status
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists
+        cursor.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Get count of screens to unbind
+        cursor.execute("SELECT COUNT(*) FROM screens WHERE user_id = %s", (user_id,))
+        screen_count = cursor.fetchone()[0]
+        
+        if screen_count == 0:
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'User has no screens to unbind'}), 200
+        
+        # Move screens back to controllers table and mark as unassigned
+        cursor.execute("""
+            INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status, last_seen, assigned)
+            SELECT s.serial_number, 
+                   CONCAT('regenerated-', SUBSTRING(MD5(RAND()), 1, 16)),
+                   s.latitude, s.longitude, s.online_status, s.last_seen, FALSE
+            FROM screens s 
+            WHERE s.user_id = %s
+        """, (user_id,))
+        
+        # Delete screens from screens table
+        cursor.execute("DELETE FROM screens WHERE user_id = %s", (user_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'Successfully unbound {screen_count} screens from user {user[0]}'
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to unbind screens: {str(e)}'}), 500
+
+@app.route('/api/admin/users/<int:user_id>/reset-password', methods=['POST'])
+def admin_reset_user_password(user_id):
+    """Reset user password (admin only)"""
+    admin_check, admin_response, admin_status = require_admin()
+    if not admin_check:
+        return admin_response, admin_status
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        new_password = data.get('new_password', '')
+        
+        if not new_password:
+            return jsonify({'error': 'New password is required'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'error': 'New password must be at least 6 characters long'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists and is not super admin
+        cursor.execute("SELECT username, is_admin FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        if user[1]:  # is_admin
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Cannot reset super admin password'}), 403
+        
+        # Update password
+        new_password_hash = generate_password_hash(new_password)
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s",
+            (new_password_hash, user_id)
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'Password reset successfully for user {user[0]}'
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Password reset failed: {str(e)}'}), 500
+
+@app.route('/api/admin/users/<int:user_id>/delete', methods=['DELETE'])
+def admin_delete_user(user_id):
+    """Delete user and their data (admin only)"""
+    admin_check, admin_response, admin_status = require_admin()
+    if not admin_check:
+        return admin_response, admin_status
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists and is not super admin
+        cursor.execute("SELECT username, is_admin FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        if user[1]:  # is_admin
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Cannot delete super admin'}), 403
+        
+        # Get count of user's screens for info
+        cursor.execute("SELECT COUNT(*) FROM screens WHERE user_id = %s", (user_id,))
+        screen_count = cursor.fetchone()[0]
+        
+        # Move user's screens back to controllers (unassigned)
+        if screen_count > 0:
+            cursor.execute("""
+                INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status, last_seen, assigned)
+                SELECT s.serial_number, 
+                       CONCAT('regenerated-', SUBSTRING(MD5(RAND()), 1, 16)),
+                       s.latitude, s.longitude, s.online_status, s.last_seen, FALSE
+                FROM screens s 
+                WHERE s.user_id = %s
+            """, (user_id,))
+        
+        # Delete user (cascading foreign keys will handle screens and screen_data)
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'User {user[0]} deleted successfully. {screen_count} screens moved to unassigned controllers.'
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'User deletion failed: {str(e)}'}), 500
 
 # WebSocket events
 @socketio.on('connect')

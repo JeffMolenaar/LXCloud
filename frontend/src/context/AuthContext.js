@@ -33,8 +33,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await api.login(credentials);
+      
+      if (response.data.requires_2fa) {
+        return { 
+          success: false, 
+          requires_2fa: true,
+          error: response.data.message 
+        };
+      }
+      
       setUser(response.data.user);
-      return { success: true };
+      return { 
+        success: true,
+        user: response.data.user 
+      };
     } catch (error) {
       console.error('Login error:', error);
       let errorMessage = 'Login failed';
