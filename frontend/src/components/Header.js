@@ -59,9 +59,9 @@ const Header = () => {
     <header className="header">
       <div className="header-content">
         <div className="logo">
-          {(settings.logoUrl || uiSettings?.logo_url) ? (
+          {settings.logoUrl ? (
             <img 
-              src={settings.logoUrl || uiSettings?.logo_url} 
+              src={settings.logoUrl} 
               alt={settings.logoText} 
               style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
               onError={(e) => {
@@ -70,7 +70,7 @@ const Header = () => {
               }}
             />
           ) : null}
-          <span style={{ display: (settings.logoUrl || uiSettings?.logo_url) ? 'none' : 'inline' }}>
+          <span style={{ display: settings.logoUrl ? 'none' : 'inline' }}>
             {settings.logoText}
           </span>
         </div>

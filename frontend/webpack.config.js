@@ -47,8 +47,21 @@ module.exports = {
     historyApiFallback: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.BACKEND_URL || 'http://localhost:5000',
         changeOrigin: true,
+        secure: false,
+        timeout: 10000,
+        proxyTimeout: 10000,
+        onError: function (err, req, res) {
+          console.log('Proxy error:', err);
+          res.writeHead(502, {
+            'Content-Type': 'application/json',
+          });
+          res.end(JSON.stringify({ error: 'Backend server unavailable' }));
+        },
+        onProxyReq: function (proxyReq, req, res) {
+          console.log(`Proxying ${req.method} ${req.url} to ${process.env.BACKEND_URL || 'http://localhost:5000'}`);
+        },
       },
     },
   },
