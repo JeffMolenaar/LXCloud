@@ -140,11 +140,6 @@ const AdminPanel = () => {
         <Link to="/admin/ui-customization" className="button" style={{ textDecoration: 'none' }}>
           🎨 Cloud UI Customization
         </Link>
-        {user?.is_admin && (
-          <Link to="/admin/settings" className="button button-secondary" style={{ textDecoration: 'none' }}>
-            ⚙️ System Settings
-          </Link>
-        )}
       </div>
       
       {error && (

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import api from '../services/api';
 
 const CloudUICustomization = () => {
   const { user } = useAuth();
+  const { settings, updateSettings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -15,9 +17,20 @@ const CloudUICustomization = () => {
     favicon_url: '',
     background_image_url: ''
   });
+  // Super admin settings (from AdminSettings.js)
+  const [adminSettings, setAdminSettings] = useState({
+    logoUrl: '',
+    logoText: 'LXCloud',
+    siteName: 'LXCloud - LED Screen Management Platform',
+    faviconUrl: '',
+    mapMarkerOnline: '',
+    mapMarkerOffline: ''
+  });
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
+  const [uploadingMapMarkerOnline, setUploadingMapMarkerOnline] = useState(false);
+  const [uploadingMapMarkerOffline, setUploadingMapMarkerOffline] = useState(false);
 
   useEffect(() => {
     if (!user?.is_admin && !user?.is_administrator) {
@@ -27,12 +40,25 @@ const CloudUICustomization = () => {
     }
     
     loadUISettings();
+    // Load admin settings only for super admins
+    if (user?.is_admin) {
+      loadAdminSettings();
+    }
   }, [user]);
 
   const loadUISettings = async () => {
     try {
       const response = await api.getUISettings();
-      setUiSettings(response.data.settings || uiSettings);
+      const loadedSettings = response.data.settings || uiSettings;
+      setUiSettings(loadedSettings);
+      
+      // Sync with admin settings for super admins
+      if (user?.is_admin && loadedSettings.logo_url) {
+        setAdminSettings(prev => ({ ...prev, logoUrl: loadedSettings.logo_url }));
+      }
+      if (user?.is_admin && loadedSettings.favicon_url) {
+        setAdminSettings(prev => ({ ...prev, faviconUrl: loadedSettings.favicon_url }));
+      }
     } catch (error) {
       if (error.response?.status === 404) {
         // Settings don't exist yet, use defaults
@@ -46,11 +72,59 @@ const CloudUICustomization = () => {
     }
   };
 
+  const loadAdminSettings = async () => {
+    try {
+      const response = await api.getSettings();
+      const loadedAdminSettings = {
+        ...adminSettings,
+        ...response.data.settings
+      };
+      setAdminSettings(loadedAdminSettings);
+      
+      // Sync with UI settings
+      if (loadedAdminSettings.logoUrl) {
+        setUiSettings(prev => ({ ...prev, logo_url: loadedAdminSettings.logoUrl }));
+      }
+      if (loadedAdminSettings.faviconUrl) {
+        setUiSettings(prev => ({ ...prev, favicon_url: loadedAdminSettings.faviconUrl }));
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        console.log('Admin settings not found, using defaults');
+      } else {
+        console.error('Error loading admin settings:', error);
+      }
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setUiSettings(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Sync with admin settings for super admins
+    if (user?.is_admin) {
+      if (field === 'logo_url') {
+        handleAdminInputChange('logoUrl', value);
+      } else if (field === 'favicon_url') {
+        handleAdminInputChange('faviconUrl', value);
+      }
+    }
+  };
+
+  const handleAdminInputChange = (field, value) => {
+    setAdminSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Sync with UI settings for logo and favicon
+    if (field === 'logoUrl') {
+      setUiSettings(prev => ({ ...prev, logo_url: value }));
+    } else if (field === 'faviconUrl') {
+      setUiSettings(prev => ({ ...prev, favicon_url: value }));
+    }
   };
 
   const handleFileUpload = async (file, type) => {
@@ -79,32 +153,60 @@ const CloudUICustomization = () => {
       if (type === 'logo') setUploadingLogo(true);
       else if (type === 'favicon') setUploadingFavicon(true);
       else if (type === 'background') setUploadingBackground(true);
+      else if (type === 'map_marker_online') setUploadingMapMarkerOnline(true);
+      else if (type === 'map_marker_offline') setUploadingMapMarkerOffline(true);
 
       const response = await api.uploadUIAsset(formData);
       
-      // Update the UI settings with the new URL
-      handleInputChange(`${type}_url`, response.data.url);
-      setSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
+      // Update the appropriate settings with the new URL
+      if (type === 'map_marker_online') {
+        handleAdminInputChange('mapMarkerOnline', response.data.url);
+      } else if (type === 'map_marker_offline') {
+        handleAdminInputChange('mapMarkerOffline', response.data.url);
+      } else {
+        handleInputChange(`${type}_url`, response.data.url);
+        
+        // For logo and favicon, also update admin settings if user is super admin
+        if (user?.is_admin && (type === 'logo' || type === 'favicon')) {
+          if (type === 'logo') {
+            handleAdminInputChange('logoUrl', response.data.url);
+          } else if (type === 'favicon') {
+            handleAdminInputChange('faviconUrl', response.data.url);
+          }
+        }
+      }
+      
+      setSuccess(`${type.replace('_', ' ').charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')} uploaded successfully`);
       setTimeout(() => setSuccess(''), 3000);
       
     } catch (error) {
-      setError(error.response?.data?.error || `Failed to upload ${type}`);
+      setError(error.response?.data?.error || `Failed to upload ${type.replace('_', ' ')}`);
       setTimeout(() => setError(''), 3000);
     } finally {
       if (type === 'logo') setUploadingLogo(false);
       else if (type === 'favicon') setUploadingFavicon(false);
       else if (type === 'background') setUploadingBackground(false);
+      else if (type === 'map_marker_online') setUploadingMapMarkerOnline(false);
+      else if (type === 'map_marker_offline') setUploadingMapMarkerOffline(false);
     }
   };
 
   const saveUISettings = async () => {
     try {
       setLoading(true);
+      
+      // Save UI settings
       await api.updateUISettings(uiSettings);
-      setSuccess('UI settings saved successfully');
+      
+      // For super admins, also save admin settings and update the settings context
+      if (user?.is_admin) {
+        await updateSettings(adminSettings);
+      }
+      
+      setSuccess('Settings saved successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      setError(error.response?.data?.error || 'Failed to save UI settings');
+      setError(error.response?.data?.error || 'Failed to save settings');
       setTimeout(() => setError(''), 3000);
     } finally {
       setLoading(false);
@@ -112,7 +214,7 @@ const CloudUICustomization = () => {
   };
 
   const resetToDefaults = () => {
-    if (confirm('Are you sure you want to reset all UI settings to defaults? This will not delete uploaded files.')) {
+    if (confirm('Are you sure you want to reset all settings to defaults? This will not delete uploaded files.')) {
       setUiSettings({
         app_name: 'LXCloud',
         primary_color: '#667eea',
@@ -121,6 +223,17 @@ const CloudUICustomization = () => {
         favicon_url: '',
         background_image_url: ''
       });
+      
+      if (user?.is_admin) {
+        setAdminSettings({
+          logoUrl: '',
+          logoText: 'LXCloud',
+          siteName: 'LXCloud - LED Screen Management Platform',
+          faviconUrl: '',
+          mapMarkerOnline: '',
+          mapMarkerOffline: ''
+        });
+      }
     }
   };
 
@@ -140,8 +253,13 @@ const CloudUICustomization = () => {
 
   return (
     <div className="container">
-      <h1>Cloud UI Customization</h1>
-      <p>Customize the appearance and branding of your LXCloud installation.</p>
+      <h1>Cloud UI Customization & Settings</h1>
+      <p>Customize the appearance, branding, and system settings of your LXCloud installation.</p>
+      {user?.is_admin && (
+        <p style={{ color: '#667eea', fontWeight: 'bold' }}>
+          ⚙️ As a super administrator, you have access to additional system settings including map markers and advanced configuration.
+        </p>
+      )}
       
       {error && (
         <div className="alert alert-error">
@@ -346,6 +464,168 @@ const CloudUICustomization = () => {
         </div>
       </div>
 
+      {/* Super Admin Settings - Map Markers (only for super admins) */}
+      {user?.is_admin && (
+        <div className="card">
+          <h2>Map Markers (Super Admin)</h2>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            Configure custom map markers for online and offline screens. These settings are only available to super administrators.
+          </p>
+          
+          <div className="form-group">
+            <label className="form-label">Online Screen Marker</label>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e.target.files[0], 'map_marker_online')}
+                  disabled={uploadingMapMarkerOnline}
+                  style={{ marginBottom: '10px' }}
+                />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={adminSettings.mapMarkerOnline}
+                  onChange={(e) => handleAdminInputChange('mapMarkerOnline', e.target.value)}
+                  placeholder="Online marker URL"
+                  disabled={uploadingMapMarkerOnline}
+                />
+                <small style={{ color: '#666' }}>
+                  Upload a custom marker or enter a URL. Leave empty for default green marker.
+                </small>
+              </div>
+              {adminSettings.mapMarkerOnline && (
+                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                  <img 
+                    src={adminSettings.mapMarkerOnline} 
+                    alt="Online marker preview" 
+                    style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                </div>
+              )}
+            </div>
+            {uploadingMapMarkerOnline && <div style={{ color: '#666', fontSize: '14px' }}>Uploading online marker...</div>}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Offline Screen Marker</label>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e.target.files[0], 'map_marker_offline')}
+                  disabled={uploadingMapMarkerOffline}
+                  style={{ marginBottom: '10px' }}
+                />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={adminSettings.mapMarkerOffline}
+                  onChange={(e) => handleAdminInputChange('mapMarkerOffline', e.target.value)}
+                  placeholder="Offline marker URL"
+                  disabled={uploadingMapMarkerOffline}
+                />
+                <small style={{ color: '#666' }}>
+                  Upload a custom marker or enter a URL. Leave empty for default red marker.
+                </small>
+              </div>
+              {adminSettings.mapMarkerOffline && (
+                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                  <img 
+                    src={adminSettings.mapMarkerOffline} 
+                    alt="Offline marker preview" 
+                    style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                </div>
+              )}
+            </div>
+            {uploadingMapMarkerOffline && <div style={{ color: '#666', fontSize: '14px' }}>Uploading offline marker...</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Super Admin Settings - Advanced Settings (only for super admins) */}
+      {user?.is_admin && (
+        <div className="card">
+          <h2>Advanced Settings (Super Admin)</h2>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            Advanced system settings that affect the entire application. Only super administrators can modify these.
+          </p>
+          
+          <div className="form-group">
+            <label className="form-label">Header Logo Text</label>
+            <input
+              type="text"
+              className="form-input"
+              value={adminSettings.logoText}
+              onChange={(e) => handleAdminInputChange('logoText', e.target.value)}
+              placeholder="LXCloud"
+            />
+            <small style={{ color: '#666' }}>
+              Text displayed when no logo URL is provided in the header.
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Site Name (Browser Title)</label>
+            <input
+              type="text"
+              className="form-input"
+              value={adminSettings.siteName}
+              onChange={(e) => handleAdminInputChange('siteName', e.target.value)}
+              placeholder="LXCloud - LED Screen Management Platform"
+            />
+            <small style={{ color: '#666' }}>
+              This appears in the browser title bar and bookmarks.
+            </small>
+          </div>
+
+          <div className="form-group">
+            <h3>Preview</h3>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <div>
+                <h4>Header Logo Preview</h4>
+                <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '15px', borderRadius: '8px', color: 'white' }}>
+                  {uiSettings.logo_url ? (
+                    <img 
+                      src={uiSettings.logo_url} 
+                      alt={adminSettings.logoText} 
+                      style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'inline';
+                      }}
+                    />
+                  ) : null}
+                  <span style={{ display: uiSettings.logo_url ? 'none' : 'inline', fontSize: '1.8rem', fontWeight: 'bold' }}>
+                    {adminSettings.logoText}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4>Browser Title Preview</h4>
+                <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                  <strong>{adminSettings.siteName}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
         <button
           type="button"
@@ -359,7 +639,7 @@ const CloudUICustomization = () => {
           type="button"
           className="button"
           onClick={saveUISettings}
-          disabled={loading || uploadingLogo || uploadingFavicon || uploadingBackground}
+          disabled={loading || uploadingLogo || uploadingFavicon || uploadingBackground || uploadingMapMarkerOnline || uploadingMapMarkerOffline}
           style={{ backgroundColor: uiSettings.primary_color, borderColor: uiSettings.primary_color }}
         >
           {loading ? 'Saving...' : 'Save Settings'}
