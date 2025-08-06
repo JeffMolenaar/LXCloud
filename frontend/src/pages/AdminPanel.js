@@ -10,6 +10,9 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     if (!user?.is_admin && !user?.is_administrator) {
@@ -43,9 +46,73 @@ const AdminPanel = () => {
     try {
       await api.toggleUserAdmin(userId);
       setSuccess('User administrator status updated');
+      setTimeout(() => setSuccess(''), 3000);
       loadAdminData(); // Reload data
     } catch (error) {
       setError(error.response?.data?.error || 'Failed to update user');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const unbindUserScreens = async (userId, username) => {
+    if (!confirm(`Are you sure you want to unbind all screens from user "${username}"? Their screens will become unassigned controllers.`)) {
+      return;
+    }
+
+    try {
+      const response = await api.unbindUserScreens(userId);
+      setSuccess(response.data.message);
+      setTimeout(() => setSuccess(''), 3000);
+      loadAdminData(); // Reload data
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to unbind screens');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const openPasswordModal = (user) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setShowPasswordModal(true);
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setSelectedUser(null);
+    setNewPassword('');
+  };
+
+  const resetUserPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      const response = await api.resetUserPassword(selectedUser.id, { new_password: newPassword });
+      setSuccess(response.data.message);
+      setTimeout(() => setSuccess(''), 3000);
+      closePasswordModal();
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to reset password');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const deleteUser = async (userId, username) => {
+    if (!confirm(`Are you sure you want to DELETE user "${username}"? This action cannot be undone. All their screens will become unassigned controllers.`)) {
+      return;
+    }
+
+    try {
+      const response = await api.deleteUser(userId);
+      setSuccess(response.data.message);
+      setTimeout(() => setSuccess(''), 3000);
+      loadAdminData(); // Reload data
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to delete user');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -90,42 +157,80 @@ const AdminPanel = () => {
                 <th>Email</th>
                 <th>Type</th>
                 <th>2FA</th>
+                <th>Screens</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
-                <tr key={u.id}>
-                  <td>{u.username}</td>
-                  <td>{u.email}</td>
-                  <td>
-                    {u.is_admin ? (
-                      <span className="badge badge-danger">Super Admin</span>
-                    ) : u.is_administrator ? (
-                      <span className="badge badge-warning">Administrator</span>
-                    ) : (
-                      <span className="badge badge-secondary">User</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`badge ${u.two_fa_enabled ? 'badge-success' : 'badge-secondary'}`}>
-                      {u.two_fa_enabled ? 'Enabled' : 'Disabled'}
-                    </span>
-                  </td>
-                  <td>{new Date(u.created_at).toLocaleDateString()}</td>
-                  <td>
-                    {!u.is_admin && (
-                      <button
-                        className="button button-small"
-                        onClick={() => toggleUserAdmin(u.id)}
-                      >
-                        {u.is_administrator ? 'Remove Admin' : 'Make Admin'}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {users.map(u => {
+                const userScreens = screens.filter(s => s.assigned_user === u.username);
+                return (
+                  <tr key={u.id}>
+                    <td>{u.username}</td>
+                    <td>{u.email}</td>
+                    <td>
+                      {u.is_admin ? (
+                        <span className="badge badge-danger">Super Admin</span>
+                      ) : u.is_administrator ? (
+                        <span className="badge badge-warning">Administrator</span>
+                      ) : (
+                        <span className="badge badge-secondary">User</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`badge ${u.two_fa_enabled ? 'badge-success' : 'badge-secondary'}`}>
+                        {u.two_fa_enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </td>
+                    <td>{userScreens.length}</td>
+                    <td>{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                        {!u.is_admin && (
+                          <>
+                            <button
+                              className="button button-small"
+                              onClick={() => toggleUserAdmin(u.id)}
+                              title={u.is_administrator ? 'Remove Admin' : 'Make Admin'}
+                            >
+                              {u.is_administrator ? 'Remove Admin' : 'Make Admin'}
+                            </button>
+                            
+                            {userScreens.length > 0 && (
+                              <button
+                                className="button button-small button-secondary"
+                                onClick={() => unbindUserScreens(u.id, u.username)}
+                                title="Unbind all screens from this user"
+                              >
+                                Unbind Screens
+                              </button>
+                            )}
+                            
+                            <button
+                              className="button button-small"
+                              style={{ backgroundColor: '#ffc107', borderColor: '#ffc107' }}
+                              onClick={() => openPasswordModal(u)}
+                              title="Reset user password"
+                            >
+                              Reset Password
+                            </button>
+                            
+                            <button
+                              className="button button-small"
+                              style={{ backgroundColor: '#dc3545', borderColor: '#dc3545' }}
+                              onClick={() => deleteUser(u.id, u.username)}
+                              title="Delete user permanently"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -243,6 +348,54 @@ const AdminPanel = () => {
           </table>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      {showPasswordModal && (
+        <div className="modal" onClick={closePasswordModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="close-button"
+              onClick={closePasswordModal}
+            >
+              ×
+            </button>
+            <h2>Reset Password for {selectedUser?.username}</h2>
+            <form onSubmit={(e) => { e.preventDefault(); resetUserPassword(); }}>
+              <div className="form-group">
+                <label className="form-label">New Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength="6"
+                  required
+                  autoFocus
+                />
+                <small style={{ color: '#666' }}>
+                  Password must be at least 6 characters long
+                </small>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={closePasswordModal}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="button"
+                  style={{ backgroundColor: '#ffc107', borderColor: '#ffc107' }}
+                >
+                  Reset Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

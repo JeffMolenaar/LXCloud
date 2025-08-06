@@ -48,6 +48,9 @@ const api = {
   getUsers: () => axios.get(`${API_BASE_URL}/admin/users`),
   toggleUserAdmin: (userId) => axios.post(`${API_BASE_URL}/admin/users/${userId}/toggle-admin`),
   createAdmin: (data) => axios.post(`${API_BASE_URL}/admin/create-admin`, data),
+  unbindUserScreens: (userId) => axios.post(`${API_BASE_URL}/admin/users/${userId}/unbind-screens`),
+  resetUserPassword: (userId, data) => axios.post(`${API_BASE_URL}/admin/users/${userId}/reset-password`, data),
+  deleteUser: (userId) => axios.delete(`${API_BASE_URL}/admin/users/${userId}/delete`),
 
   // Device updates (for testing)
   deviceUpdate: (deviceData) => axios.post(`${API_BASE_URL}/device/update`, deviceData),
