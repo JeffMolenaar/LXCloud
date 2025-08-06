@@ -44,6 +44,8 @@ export const API_ENDPOINTS = {
   ADMIN_TOGGLE_USER: (id) => `/admin/users/${id}/toggle-admin`,
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_UPDATE_SETTINGS: '/admin/settings',
+  ADMIN_UI_SETTINGS: '/admin/ui-settings',
+  ADMIN_UPLOAD_UI_ASSET: '/admin/upload-ui-asset',
 
   // System endpoints
   HEALTH: '/health',

@@ -145,11 +145,16 @@ def register():
         user_id = user_counter
         user_counter += 1
         
+        # First user is admin, subsequent users are administrators
+        is_first_user = len(users_db) == 0
+        
         users_db[user_id] = {
             'id': user_id,
             'username': username,
             'email': email,
             'password_hash': password_hash,
+            'is_admin': is_first_user,  # First user is super admin
+            'is_administrator': True,   # All users in standalone mode have admin access
             'created_at': datetime.now()
         }
         
@@ -160,7 +165,13 @@ def register():
         
         return jsonify({
             'message': 'User registered successfully',
-            'user': {'id': user_id, 'username': username, 'email': email}
+            'user': {
+                'id': user_id, 
+                'username': username, 
+                'email': email,
+                'is_admin': is_first_user,
+                'is_administrator': True
+            }
         }), 201
         
     except Exception as e:
@@ -197,7 +208,13 @@ def login():
         
         return jsonify({
             'message': 'Login successful',
-            'user': {'id': user['id'], 'username': user['username'], 'email': user['email']}
+            'user': {
+                'id': user['id'], 
+                'username': user['username'], 
+                'email': user['email'],
+                'is_admin': user.get('is_admin', False),
+                'is_administrator': user.get('is_administrator', False)
+            }
         }), 200
         
     except Exception as e:
@@ -227,7 +244,13 @@ def get_current_user():
             return jsonify({'error': 'User not found'}), 404
         
         return jsonify({
-            'user': {'id': user['id'], 'username': user['username'], 'email': user['email']}
+            'user': {
+                'id': user['id'], 
+                'username': user['username'], 
+                'email': user['email'],
+                'is_admin': user.get('is_admin', False),
+                'is_administrator': user.get('is_administrator', False)
+            }
         }), 200
         
     except Exception as e:
@@ -404,6 +427,162 @@ def device_update():
     })
     
     return jsonify({'message': 'Update received successfully'}), 200
+
+# UI Settings endpoints for admin users
+# In-memory storage for UI settings
+ui_settings_db = {}
+
+@app.route('/api/admin/ui-settings', methods=['GET'])
+def get_ui_settings():
+    """Get UI customization settings (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user_id']
+    user = users_db.get(user_id)
+    
+    if not user or not (user.get('is_admin') or user.get('is_administrator')):
+        return jsonify({'error': 'Admin privileges required'}), 403
+    
+    # Return default values if no settings exist
+    default_settings = {
+        'app_name': 'LXCloud',
+        'primary_color': '#667eea',
+        'secondary_color': '#f093fb',
+        'logo_url': '',
+        'favicon_url': '',
+        'background_image_url': ''
+    }
+    
+    # Merge with any stored settings
+    settings = {**default_settings, **ui_settings_db}
+    
+    return jsonify({'settings': settings}), 200
+
+@app.route('/api/admin/ui-settings', methods=['POST'])
+def update_ui_settings():
+    """Update UI customization settings (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user_id']
+    user = users_db.get(user_id)
+    
+    if not user or not (user.get('is_admin') or user.get('is_administrator')):
+        return jsonify({'error': 'Admin privileges required'}), 403
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    # Update settings in memory
+    allowed_settings = ['app_name', 'primary_color', 'secondary_color', 'logo_url', 'favicon_url', 'background_image_url']
+    
+    for key, value in data.items():
+        if key in allowed_settings:
+            ui_settings_db[key] = value
+    
+    return jsonify({'message': 'UI settings updated successfully'}), 200
+
+@app.route('/api/admin/upload-ui-asset', methods=['POST'])
+def upload_ui_asset():
+    """Upload UI assets like logos, favicons, etc. (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user_id']
+    user = users_db.get(user_id)
+    
+    if not user or not (user.get('is_admin') or user.get('is_administrator')):
+        return jsonify({'error': 'Admin privileges required'}), 403
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    asset_type = request.form.get('type', 'unknown')
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'ui')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    import uuid
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{asset_type}_{uuid.uuid4().hex[:8]}{file_extension}"
+    
+    try:
+        # Save file
+        file_path = os.path.join(upload_dir, unique_filename)
+        file.save(file_path)
+        
+        # Generate URL for the uploaded file
+        file_url = f"/api/static/uploads/ui/{unique_filename}"
+        
+        return jsonify({
+            'url': file_url,
+            'message': f'{asset_type.capitalize()} uploaded successfully',
+            'filename': unique_filename
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+@app.route('/api/static/uploads/ui/<filename>')
+def serve_ui_asset(filename):
+    """Serve uploaded UI assets"""
+    upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'ui')
+    return send_from_directory(upload_dir, filename)
+
+# Admin settings endpoints (for compatibility with SettingsContext)
+admin_settings_db = {
+    'logoUrl': '',
+    'logoText': 'LXCloud',
+    'siteName': 'LXCloud - LED Screen Management Platform',
+    'faviconUrl': '',
+    'mapMarkerOnline': '',
+    'mapMarkerOffline': ''
+}
+
+@app.route('/api/admin/settings', methods=['GET'])
+def get_admin_settings():
+    """Get admin settings (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user_id']
+    user = users_db.get(user_id)
+    
+    if not user or not (user.get('is_admin') or user.get('is_administrator')):
+        return jsonify({'error': 'Admin privileges required'}), 403
+    
+    return jsonify({'settings': admin_settings_db}), 200
+
+@app.route('/api/admin/settings', methods=['POST'])
+def update_admin_settings():
+    """Update admin settings (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_id = session['user_id']
+    user = users_db.get(user_id)
+    
+    if not user or not (user.get('is_admin') or user.get('is_administrator')):
+        return jsonify({'error': 'Admin privileges required'}), 403
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    # Update admin settings in memory
+    for key, value in data.items():
+        if key in admin_settings_db:
+            admin_settings_db[key] = value
+    
+    return jsonify({'message': 'Admin settings updated successfully'}), 200
 
 # WebSocket events
 @socketio.on('connect')
