@@ -1,0 +1,25 @@
+[Unit]
+Description=LXCloud Backend
+After=network.target mysql.service mariadb.service
+
+[Service]
+Type=simple
+User=lxcloud
+WorkingDirectory=/opt/lxcloud/backend
+Environment=PATH=/opt/lxcloud/backend/venv/bin
+
+# Database configuration (uncomment and modify as needed)
+# Environment=DB_HOST=localhost
+# Environment=DB_USER=lxcloud
+# Environment=DB_PASS=your_password_here
+# Environment=DB_NAME=lxcloud
+
+# Alternative: Use an environment file
+# EnvironmentFile=/opt/lxcloud/backend/.env
+
+ExecStart=/opt/lxcloud/backend/venv/bin/python app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
