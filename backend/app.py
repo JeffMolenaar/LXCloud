@@ -131,75 +131,185 @@ def generate_registration_key():
     """Generate a secure registration key for controllers"""
     return secrets.token_urlsafe(32)
 
-def init_database():
-    """Initialize database with required tables"""
+# Application version
+APP_VERSION = "1.1.0"
+DATABASE_VERSION = 2
+
+def get_database_version():
+    """Get current database version"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT version FROM schema_version ORDER BY id DESC LIMIT 1")
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return result[0] if result else 0
+    except:
+        return 0
+
+def set_database_version(version):
+    """Set database version"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO schema_version (version, updated_at) VALUES (%s, CURRENT_TIMESTAMP)",
+            (version,)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"Database version updated to {version}")
+    except Exception as e:
+        print(f"Failed to update database version: {e}")
+
+def run_database_migrations():
+    """Run database migrations"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Users table
+        current_version = get_database_version()
+        print(f"Current database version: {current_version}")
+        print(f"Target database version: {DATABASE_VERSION}")
+        
+        if current_version < DATABASE_VERSION:
+            print("Running database migrations...")
+            
+            # Migration from version 0 to 1 (initial schema)
+            if current_version < 1:
+                print("Creating initial database schema...")
+                
+                # Schema version table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS schema_version (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        version INT NOT NULL,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Users table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        username VARCHAR(50) UNIQUE NOT NULL,
+                        email VARCHAR(100) UNIQUE NOT NULL,
+                        password_hash VARCHAR(255) NOT NULL,
+                        is_admin BOOLEAN DEFAULT FALSE,
+                        is_administrator BOOLEAN DEFAULT FALSE,
+                        two_fa_enabled BOOLEAN DEFAULT FALSE,
+                        two_fa_secret VARCHAR(255),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Controllers registration table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS controllers (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        serial_number VARCHAR(100) UNIQUE NOT NULL,
+                        registration_key VARCHAR(255) NOT NULL,
+                        latitude DECIMAL(10, 8),
+                        longitude DECIMAL(11, 8),
+                        online_status BOOLEAN DEFAULT FALSE,
+                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        assigned BOOLEAN DEFAULT FALSE
+                    )
+                """)
+                
+                # Screens table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS screens (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        serial_number VARCHAR(100) UNIQUE NOT NULL,
+                        user_id INT,
+                        custom_name VARCHAR(100),
+                        latitude DECIMAL(10, 8),
+                        longitude DECIMAL(11, 8),
+                        online_status BOOLEAN DEFAULT FALSE,
+                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                """)
+                
+                # Screen data table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS screen_data (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        screen_id INT,
+                        information TEXT,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        year INT,
+                        FOREIGN KEY (screen_id) REFERENCES screens(id) ON DELETE CASCADE,
+                        INDEX idx_year (year),
+                        INDEX idx_timestamp (timestamp)
+                    )
+                """)
+                
+                set_database_version(1)
+                print("Migration to version 1 completed")
+            
+            # Migration from version 1 to 2 (add app_info table for tracking installs/updates)
+            if current_version < 2:
+                print("Adding application info tracking...")
+                
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS app_info (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        app_version VARCHAR(20) NOT NULL,
+                        install_type ENUM('fresh', 'update') NOT NULL,
+                        previous_version VARCHAR(20),
+                        installed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        notes TEXT
+                    )
+                """)
+                
+                # Record this migration
+                cursor.execute("""
+                    INSERT INTO app_info (app_version, install_type, notes)
+                    VALUES (%s, 'update', 'Database migration to add version tracking')
+                """, (APP_VERSION,))
+                
+                set_database_version(2)
+                print("Migration to version 2 completed")
+            
+            conn.commit()
+            print("All database migrations completed successfully")
+        else:
+            print("Database is up to date")
+            
+        cursor.close()
+        conn.close()
+        
+    except Exception as e:
+        print(f"Database migration failed: {e}")
+        raise
+
+def init_database():
+    """Initialize database with required tables and run migrations"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # First, create schema_version table if it doesn't exist
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS schema_version (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                is_admin BOOLEAN DEFAULT FALSE,
-                is_administrator BOOLEAN DEFAULT FALSE,
-                two_fa_enabled BOOLEAN DEFAULT FALSE,
-                two_fa_secret VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                version INT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Controllers registration table (for unassigned controllers)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS controllers (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                serial_number VARCHAR(100) UNIQUE NOT NULL,
-                registration_key VARCHAR(255) NOT NULL,
-                latitude DECIMAL(10, 8),
-                longitude DECIMAL(11, 8),
-                online_status BOOLEAN DEFAULT FALSE,
-                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                assigned BOOLEAN DEFAULT FALSE
-            )
-        """)
-        
-        # Screens table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS screens (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                serial_number VARCHAR(100) UNIQUE NOT NULL,
-                user_id INT,
-                custom_name VARCHAR(100),
-                latitude DECIMAL(10, 8),
-                longitude DECIMAL(11, 8),
-                online_status BOOLEAN DEFAULT FALSE,
-                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        """)
-        
-        # Screen data table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS screen_data (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                screen_id INT,
-                information TEXT,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                year INT,
-                FOREIGN KEY (screen_id) REFERENCES screens(id) ON DELETE CASCADE,
-                INDEX idx_year (year),
-                INDEX idx_timestamp (timestamp)
-            )
-        """)
-        
         conn.commit()
         cursor.close()
         conn.close()
+        
+        # Run migrations
+        run_database_migrations()
+        
         print("Database initialized successfully")
         
     except Exception as e:
@@ -229,8 +339,52 @@ def health_check():
         'status': 'healthy',
         'database': db_status,
         'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
+        'version': APP_VERSION
     }), 200
+
+# Version endpoint
+@app.route('/api/version', methods=['GET'])
+def get_version():
+    """Get application and database version information"""
+    try:
+        db_version = get_database_version()
+        
+        # Get installation history
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT app_version, install_type, previous_version, installed_at, notes
+            FROM app_info
+            ORDER BY installed_at DESC
+            LIMIT 5
+        """)
+        
+        history = []
+        for row in cursor.fetchall():
+            history.append({
+                'app_version': row[0],
+                'install_type': row[1],
+                'previous_version': row[2],
+                'installed_at': row[3].isoformat() if row[3] else None,
+                'notes': row[4]
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'app_version': APP_VERSION,
+            'database_version': db_version,
+            'target_database_version': DATABASE_VERSION,
+            'installation_history': history
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'app_version': APP_VERSION,
+            'database_version': 'unknown',
+            'error': f'Could not retrieve full version info: {str(e)}'
+        }), 200
 
 # Controller registration endpoint (encrypted API for controllers)
 @app.route('/api/controller/register', methods=['POST'])

@@ -33,6 +33,8 @@ A complete cloud platform for managing LED screens with Android controllers. Fea
 
 ## Quick Installation (Ubuntu Server 22.04)
 
+### Fresh Installation
+
 Run the automated installation script:
 
 ```bash
@@ -40,6 +42,46 @@ git clone https://github.com/JeffMolenaar/LXCloud.git
 cd LXCloud
 chmod +x install.sh
 ./install.sh
+```
+
+### Updating Existing Installation
+
+To update an existing LXCloud installation to the latest version:
+
+```bash
+cd LXCloud
+git pull origin main
+./install.sh
+```
+
+Or use the dedicated update script:
+
+```bash
+cd LXCloud
+git pull origin main
+./update.sh
+```
+
+### Update Options
+
+- **Standard Update**: Preserves all data and runs database migrations
+- **Clean Update**: Removes all data and performs fresh installation (`--clean-data`)
+- **Force Update**: Reinstalls even if versions match (`--force-update`)
+- **Non-Interactive**: Runs without prompts (`--non-interactive`)
+- **Skip Backup**: Skips database backup during update (`--skip-backup`)
+
+### Version Management
+
+The install script automatically:
+- Detects existing installations
+- Checks current vs target version
+- Creates database backups before updates
+- Runs database schema migrations
+- Records installation/update history
+
+Check your current version:
+```bash
+curl http://localhost:5000/api/version
 ```
 
 The script will:
