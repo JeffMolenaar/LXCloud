@@ -277,6 +277,35 @@ def run_database_migrations():
                 set_database_version(2)
                 print("Migration to version 2 completed")
             
+            # Migration from version 2 to 3 (add admin_settings table)
+            if current_version < 3:
+                print("Adding admin settings table...")
+                
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS admin_settings (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        setting_key VARCHAR(100) UNIQUE NOT NULL,
+                        setting_value TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        INDEX idx_setting_key (setting_key)
+                    )
+                """)
+                
+                # Insert default settings
+                default_settings = [
+                    ('logoText', 'LXCloud'),
+                    ('siteName', 'LXCloud - LED Screen Management Platform')
+                ]
+                
+                for key, value in default_settings:
+                    cursor.execute("""
+                        INSERT IGNORE INTO admin_settings (setting_key, setting_value)
+                        VALUES (%s, %s)
+                    """, (key, value))
+                
+                set_database_version(3)
+                print("Migration to version 3 completed")
+            
             conn.commit()
             print("All database migrations completed successfully")
         else:
@@ -1176,6 +1205,62 @@ def delete_screen(screen_id):
     
     return jsonify({'message': 'Screen deleted successfully'}), 200
 
+@app.route('/api/screens/<int:screen_id>/unbind', methods=['POST'])
+def unbind_screen(screen_id):
+    """Unbind a single screen from current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Verify screen belongs to user (or user is admin)
+        cursor.execute("""
+            SELECT s.serial_number, s.latitude, s.longitude, s.online_status, s.last_seen,
+                   u.username, u.is_admin, u.is_administrator
+            FROM screens s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.id = %s AND (s.user_id = %s OR u.is_admin = TRUE OR u.is_administrator = TRUE)
+        """, (screen_id, session['user_id']))
+        
+        screen_data = cursor.fetchone()
+        if not screen_data:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Screen not found or access denied'}), 404
+        
+        serial_number, latitude, longitude, online_status, last_seen, owner_username, is_admin, is_administrator = screen_data
+        
+        # Move screen back to controllers table as unassigned
+        cursor.execute("""
+            INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status, last_seen, assigned)
+            VALUES (%s, %s, %s, %s, %s, %s, FALSE)
+        """, (
+            serial_number,
+            f'regenerated-{secrets.token_hex(8)}',
+            latitude,
+            longitude,
+            online_status,
+            last_seen
+        ))
+        
+        # Remove from screens table
+        cursor.execute("DELETE FROM screens WHERE id = %s", (screen_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'Screen {serial_number} has been unbound and is now an unassigned controller'
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to unbind screen: {str(e)}'}), 500
+
 @app.route('/api/screens/<int:screen_id>/data', methods=['GET'])
 def get_screen_data(screen_id):
     """Get data for a specific screen"""
@@ -1604,6 +1689,104 @@ def admin_delete_user(user_id):
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'User deletion failed: {str(e)}'}), 500
+
+@app.route('/api/admin/settings', methods=['GET'])
+def get_admin_settings():
+    """Get admin settings (super admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Check if user is super admin
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_admin FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    
+    if not user or not user[0]:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'Super admin access required'}), 403
+    
+    try:
+        # Get settings from database
+        cursor.execute("SELECT setting_key, setting_value FROM admin_settings")
+        settings_rows = cursor.fetchall()
+        
+        # Convert to dictionary
+        settings = {}
+        for key, value in settings_rows:
+            settings[key] = value
+        
+        # Return default values if no settings exist
+        default_settings = {
+            'logoUrl': None,
+            'logoText': 'LXCloud',
+            'siteName': 'LXCloud - LED Screen Management Platform',
+            'faviconUrl': None,
+            'mapMarkerOnline': None,
+            'mapMarkerOffline': None
+        }
+        
+        # Merge defaults with saved settings
+        final_settings = {**default_settings, **settings}
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'settings': final_settings}), 200
+        
+    except pymysql.Error as e:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+@app.route('/api/admin/settings', methods=['POST'])
+def update_admin_settings():
+    """Update admin settings (super admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Check if user is super admin
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_admin FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    
+    if not user or not user[0]:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'Super admin access required'}), 403
+    
+    data = request.get_json()
+    if not data:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'No data provided'}), 400
+    
+    try:
+        # Update or insert each setting
+        allowed_settings = ['logoUrl', 'logoText', 'siteName', 'faviconUrl', 'mapMarkerOnline', 'mapMarkerOffline']
+        
+        for key, value in data.items():
+            if key in allowed_settings:
+                cursor.execute("""
+                    INSERT INTO admin_settings (setting_key, setting_value, updated_at) 
+                    VALUES (%s, %s, NOW())
+                    ON DUPLICATE KEY UPDATE 
+                    setting_value = VALUES(setting_value), 
+                    updated_at = NOW()
+                """, (key, value))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': 'Settings updated successfully'}), 200
+        
+    except pymysql.Error as e:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
 
 # WebSocket events
 @socketio.on('connect')

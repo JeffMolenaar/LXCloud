@@ -42,6 +42,7 @@ const api = {
   addScreen: (screenData) => axios.post(`${API_BASE_URL}/screens`, screenData),
   updateScreen: (screenId, data) => axios.put(`${API_BASE_URL}/screens/${screenId}`, data),
   deleteScreen: (screenId) => axios.delete(`${API_BASE_URL}/screens/${screenId}`),
+  unbindScreen: (screenId) => axios.post(`${API_BASE_URL}/screens/${screenId}/unbind`),
   getScreenData: (screenId) => axios.get(`${API_BASE_URL}/screens/${screenId}/data`),
 
   // Admin endpoints
@@ -57,6 +58,10 @@ const api = {
   
   // Controller registration
   controllerRegister: (data) => axios.post(`${API_BASE_URL}/controller/register`, data),
+
+  // Settings management (admin only)
+  getSettings: () => axios.get(`${API_BASE_URL}/admin/settings`),
+  updateSettings: (settings) => axios.post(`${API_BASE_URL}/admin/settings`, settings),
 };
 
 export default api;

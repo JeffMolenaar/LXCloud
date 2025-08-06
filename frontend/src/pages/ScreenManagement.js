@@ -89,6 +89,20 @@ const ScreenManagement = () => {
     navigate(`/screens/${screenId}/data`);
   };
 
+  const handleUnbindScreen = async (screenId, screenName) => {
+    if (!window.confirm(`Are you sure you want to unbind this screen "${screenName}"? This will make it an unassigned controller.`)) {
+      return;
+    }
+
+    try {
+      await api.unbindScreen(screenId);
+      loadScreens();
+    } catch (error) {
+      setError('Failed to unbind screen');
+      console.error('Error unbinding screen:', error);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading screens...</div>;
   }
@@ -201,17 +215,29 @@ const ScreenManagement = () => {
                       className="button"
                       style={{ padding: '8px 16px', fontSize: '14px' }}
                       onClick={() => handleViewData(screen.id)}
+                      title="View Data"
                     >
-                      View Data
+                      📊
                     </button>
                     {editingScreen !== screen.id && (
-                      <button
-                        className="button button-secondary"
-                        style={{ padding: '8px 16px', fontSize: '14px' }}
-                        onClick={() => handleEditScreen(screen)}
-                      >
-                        Edit Name
-                      </button>
+                      <>
+                        <button
+                          className="button button-secondary"
+                          style={{ padding: '8px 16px', fontSize: '14px' }}
+                          onClick={() => handleEditScreen(screen)}
+                          title="Edit Name"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="button button-secondary"
+                          style={{ padding: '8px 16px', fontSize: '14px', backgroundColor: '#dc3545', borderColor: '#dc3545', color: 'white' }}
+                          onClick={() => handleUnbindScreen(screen.id, screen.custom_name || screen.serial_number)}
+                          title="Unbind this screen from user"
+                        >
+                          🔗❌
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

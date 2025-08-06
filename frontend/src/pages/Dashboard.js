@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import api from '../services/api';
 import io from 'socket.io-client';
+import { useSettings } from '../context/SettingsContext';
 
 // Fix for default markers in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -11,25 +12,6 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-// Custom icons for online/offline status
-const onlineIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const offlineIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
 });
 
 const Dashboard = () => {
@@ -41,7 +23,31 @@ const Dashboard = () => {
     serial_number: '',
     custom_name: '',
   });
+  const { settings } = useSettings();
   const navigate = useNavigate();
+
+  // Create custom icons based on settings or use defaults
+  const createMarkerIcons = () => {
+    const iconOptions = {
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    };
+
+    const onlineIcon = new L.Icon({
+      ...iconOptions,
+      iconUrl: settings.mapMarkerOnline || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+    });
+
+    const offlineIcon = new L.Icon({
+      ...iconOptions,
+      iconUrl: settings.mapMarkerOffline || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    });
+
+    return { onlineIcon, offlineIcon };
+  };
 
   useEffect(() => {
     loadScreens();
@@ -99,6 +105,7 @@ const Dashboard = () => {
   // Default center (Amsterdam, Netherlands)
   const mapCenter = [52.3676, 4.9041];
   const screensWithLocation = screens.filter(screen => screen.latitude && screen.longitude);
+  const { onlineIcon, offlineIcon } = createMarkerIcons();
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
