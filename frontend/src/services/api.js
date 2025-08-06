@@ -62,6 +62,15 @@ const api = {
   // Settings management (admin only)
   getSettings: () => axios.get(`${API_BASE_URL}/admin/settings`),
   updateSettings: (settings) => axios.post(`${API_BASE_URL}/admin/settings`, settings),
+
+  // UI Customization (admin only)
+  getUISettings: () => axios.get(`${API_BASE_URL}/admin/ui-settings`),
+  updateUISettings: (settings) => axios.post(`${API_BASE_URL}/admin/ui-settings`, settings),
+  uploadUIAsset: (formData) => axios.post(`${API_BASE_URL}/admin/upload-ui-asset`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
 };
 
 export default api;
