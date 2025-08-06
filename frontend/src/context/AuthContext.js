@@ -24,6 +24,13 @@ export const AuthProvider = ({ children }) => {
       const response = await api.getCurrentUser();
       setUser(response.data.user);
     } catch (error) {
+      console.log('Auth check failed:', error.message);
+      // If it's a network error, don't set loading to false immediately
+      // This allows the app to continue trying
+      if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error' || 
+          error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
+        console.log('Backend connection failed - user not authenticated');
+      }
       setUser(null);
     } finally {
       setLoading(false);
