@@ -12,12 +12,12 @@ app.config['SECRET_KEY'] = 'lxcloud-secret-key-change-in-production'
 CORS(app, supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Database configuration
+# Database configuration with environment variable support
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'lxcloud',
-    'password': 'lxcloud123',
-    'database': 'lxcloud',
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'user': os.environ.get('DB_USER', 'lxcloud'),
+    'password': os.environ.get('DB_PASS', 'lxcloud123'),
+    'database': os.environ.get('DB_NAME', 'lxcloud'),
     'charset': 'utf8mb4'
 }
 
