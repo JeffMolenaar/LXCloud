@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
-import api from '../services/api';
-import io from 'socket.io-client';
 import { useSettings } from '../context/SettingsContext';
+import { useScreens } from '../hooks/useScreens';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { APP_CONFIG } from '../utils/constants';
+import { formatDate } from '../utils/helpers';
 
 // Fix for default markers in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -15,16 +17,31 @@ L.Icon.Default.mergeOptions({
 });
 
 const Dashboard = () => {
-  const [screens, setScreens] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newScreen, setNewScreen] = useState({
     serial_number: '',
     custom_name: '',
   });
+  
   const { settings } = useSettings();
   const navigate = useNavigate();
+  
+  // Use custom hooks for screen management
+  const {
+    screens,
+    loading,
+    error,
+    addScreen,
+    getScreensWithLocation,
+    getScreenStats,
+    updateScreenStatus,
+    clearError
+  } = useScreens();
+
+  // WebSocket for real-time updates
+  useWebSocket((data) => {
+    updateScreenStatus(data.serial_number, data);
+  });
 
   // Create custom icons based on settings or use defaults
   const createMarkerIcons = () => {
@@ -38,63 +55,25 @@ const Dashboard = () => {
 
     const onlineIcon = new L.Icon({
       ...iconOptions,
-      iconUrl: settings.mapMarkerOnline || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+      iconUrl: settings.mapMarkerOnline || APP_CONFIG.MARKER_ICONS.ONLINE,
     });
 
     const offlineIcon = new L.Icon({
       ...iconOptions,
-      iconUrl: settings.mapMarkerOffline || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+      iconUrl: settings.mapMarkerOffline || APP_CONFIG.MARKER_ICONS.OFFLINE,
     });
 
     return { onlineIcon, offlineIcon };
   };
 
-  useEffect(() => {
-    loadScreens();
-    
-    // Connect to WebSocket for real-time updates
-    const socket = io('http://localhost:5000');
-    
-    socket.on('screen_update', (data) => {
-      setScreens(prevScreens => 
-        prevScreens.map(screen => 
-          screen.serial_number === data.serial_number
-            ? {
-                ...screen,
-                latitude: data.latitude,
-                longitude: data.longitude,
-                online_status: data.online_status,
-                last_seen: data.timestamp,
-              }
-            : screen
-        )
-      );
-    });
-
-    return () => socket.disconnect();
-  }, []);
-
-  const loadScreens = async () => {
-    try {
-      const response = await api.getScreens();
-      setScreens(response.data.screens);
-    } catch (error) {
-      setError('Failed to load screens');
-      console.error('Error loading screens:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleAddScreen = async (e) => {
     e.preventDefault();
-    try {
-      await api.addScreen(newScreen);
+    clearError();
+    
+    const result = await addScreen(newScreen);
+    if (result.success) {
       setShowAddModal(false);
       setNewScreen({ serial_number: '', custom_name: '' });
-      loadScreens();
-    } catch (error) {
-      setError(error.response?.data?.error || 'Failed to add screen');
     }
   };
 
@@ -102,9 +81,9 @@ const Dashboard = () => {
     navigate(`/screens/${screen.id}/data`);
   };
 
-  // Default center (Amsterdam, Netherlands)
-  const mapCenter = [52.3676, 4.9041];
-  const screensWithLocation = screens.filter(screen => screen.latitude && screen.longitude);
+  // Get screen data and statistics
+  const screensWithLocation = getScreensWithLocation();
+  const stats = getScreenStats();
   const { onlineIcon, offlineIcon } = createMarkerIcons();
 
   if (loading) {
@@ -125,8 +104,8 @@ const Dashboard = () => {
         <h2 style={{ marginBottom: '20px' }}>Screen Locations</h2>
         <div className="map-container">
           <MapContainer
-            center={mapCenter}
-            zoom={2}
+            center={APP_CONFIG.DEFAULT_MAP_CENTER}
+            zoom={APP_CONFIG.DEFAULT_MAP_ZOOM}
             style={{ height: '100%', width: '100%' }}
           >
             <TileLayer
@@ -148,7 +127,7 @@ const Dashboard = () => {
                     <h3>{screen.custom_name || screen.serial_number}</h3>
                     <p>Serial: {screen.serial_number}</p>
                     <p>Status: {screen.online_status ? 'Online' : 'Offline'}</p>
-                    <p>Last seen: {screen.last_seen ? new Date(screen.last_seen).toLocaleString() : 'Never'}</p>
+                    <p>Last seen: {formatDate(screen.last_seen)}</p>
                     <button 
                       className="button" 
                       style={{ marginTop: '10px' }}
@@ -174,23 +153,19 @@ const Dashboard = () => {
         <h2>Quick Stats</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-            <h3 style={{ color: '#667eea', margin: '0 0 5px 0' }}>{screens.length}</h3>
+            <h3 style={{ color: '#667eea', margin: '0 0 5px 0' }}>{stats.total}</h3>
             <p style={{ margin: 0, color: '#666' }}>Total Screens</p>
           </div>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-            <h3 style={{ color: '#28a745', margin: '0 0 5px 0' }}>
-              {screens.filter(s => s.online_status).length}
-            </h3>
+            <h3 style={{ color: '#28a745', margin: '0 0 5px 0' }}>{stats.online}</h3>
             <p style={{ margin: 0, color: '#666' }}>Online</p>
           </div>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-            <h3 style={{ color: '#dc3545', margin: '0 0 5px 0' }}>
-              {screens.filter(s => !s.online_status).length}
-            </h3>
+            <h3 style={{ color: '#dc3545', margin: '0 0 5px 0' }}>{stats.offline}</h3>
             <p style={{ margin: 0, color: '#666' }}>Offline</p>
           </div>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-            <h3 style={{ color: '#6c757d', margin: '0 0 5px 0' }}>{screensWithLocation.length}</h3>
+            <h3 style={{ color: '#6c757d', margin: '0 0 5px 0' }}>{stats.withLocation}</h3>
             <p style={{ margin: 0, color: '#666' }}>With Location</p>
           </div>
         </div>
