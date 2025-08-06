@@ -110,6 +110,9 @@ GRANT ALL PRIVILEGES ON lxcloud.* TO 'lxcloud'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
+# Save the repository directory before changing directories
+REPO_DIR="$(dirname "$(readlink -f "$0")")"
+
 # Create application directory
 APP_DIR="/opt/lxcloud"
 log "Creating application directory at $APP_DIR..."
@@ -117,14 +120,14 @@ sudo mkdir -p $APP_DIR
 sudo chown $USER:$USER $APP_DIR
 
 # Clone or create application files
+log "Creating application files..."
 cd $APP_DIR
 
 # If this script is run from the repo, copy files, otherwise create them
-if [ -f "$(dirname $0)/backend/app.py" ]; then
+if [ -f "$REPO_DIR/backend/app.py" ]; then
     log "Copying application files from repository..."
-    cp -r "$(dirname $0)"/* .
+    cp -r "$REPO_DIR"/* .
 else
-    log "Creating application files..."
     # Create directory structure
     mkdir -p backend frontend
 
