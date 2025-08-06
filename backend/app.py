@@ -133,7 +133,7 @@ def generate_registration_key():
 
 # Application version
 APP_VERSION = "1.2.0"
-DATABASE_VERSION = 2
+DATABASE_VERSION = 4
 
 def get_database_version():
     """Get current database version"""
@@ -305,6 +305,39 @@ def run_database_migrations():
                 
                 set_database_version(3)
                 print("Migration to version 3 completed")
+            
+            # Migration from version 3 to 4 (add ui_settings table for UI customization)
+            if current_version < 4:
+                print("Adding UI settings table...")
+                
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS ui_settings (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        setting_key VARCHAR(100) UNIQUE NOT NULL,
+                        setting_value TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        INDEX idx_setting_key (setting_key)
+                    )
+                """)
+                
+                # Insert default UI settings
+                default_ui_settings = [
+                    ('app_name', 'LXCloud'),
+                    ('primary_color', '#667eea'),
+                    ('secondary_color', '#f093fb'),
+                    ('logo_url', ''),
+                    ('favicon_url', ''),
+                    ('background_image_url', '')
+                ]
+                
+                for key, value in default_ui_settings:
+                    cursor.execute("""
+                        INSERT IGNORE INTO ui_settings (setting_key, setting_value)
+                        VALUES (%s, %s)
+                    """, (key, value))
+                
+                set_database_version(4)
+                print("Migration to version 4 completed")
             
             conn.commit()
             print("All database migrations completed successfully")
@@ -1787,6 +1820,143 @@ def update_admin_settings():
         cursor.close()
         conn.close()
         return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+@app.route('/api/admin/ui-settings', methods=['GET'])
+def get_ui_settings():
+    """Get UI customization settings (admin only)"""
+    is_authorized, error_response, status_code = require_admin()
+    if not is_authorized:
+        return error_response, status_code
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Get UI settings from database
+        cursor.execute("SELECT setting_key, setting_value FROM ui_settings")
+        settings_rows = cursor.fetchall()
+        
+        # Convert to dictionary
+        settings = {}
+        for key, value in settings_rows:
+            settings[key] = value
+        
+        # Return default values if no settings exist
+        default_settings = {
+            'app_name': 'LXCloud',
+            'primary_color': '#667eea',
+            'secondary_color': '#f093fb',
+            'logo_url': '',
+            'favicon_url': '',
+            'background_image_url': ''
+        }
+        
+        # Merge defaults with saved settings
+        final_settings = {**default_settings, **settings}
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'settings': final_settings}), 200
+        
+    except pymysql.Error as e:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+@app.route('/api/admin/ui-settings', methods=['POST'])
+def update_ui_settings():
+    """Update UI customization settings (admin only)"""
+    is_authorized, error_response, status_code = require_admin()
+    if not is_authorized:
+        return error_response, status_code
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Update or insert each setting
+        allowed_settings = ['app_name', 'primary_color', 'secondary_color', 'logo_url', 'favicon_url', 'background_image_url']
+        
+        for key, value in data.items():
+            if key in allowed_settings:
+                cursor.execute("""
+                    INSERT INTO ui_settings (setting_key, setting_value, updated_at) 
+                    VALUES (%s, %s, NOW())
+                    ON DUPLICATE KEY UPDATE 
+                    setting_value = VALUES(setting_value), 
+                    updated_at = NOW()
+                """, (key, value))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': 'UI settings updated successfully'}), 200
+        
+    except pymysql.Error as e:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+@app.route('/api/admin/upload-ui-asset', methods=['POST'])
+def upload_ui_asset():
+    """Upload UI asset (logo, favicon, background) (admin only)"""
+    is_authorized, error_response, status_code = require_admin()
+    if not is_authorized:
+        return error_response, status_code
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    asset_type = request.form.get('type', 'logo')
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Validate file type
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'svg'}
+    allowed_mimes = {'image/png', 'image/jpeg', 'image/gif', 'image/svg+xml'}
+    
+    if file.content_type not in allowed_mimes:
+        return jsonify({'error': 'Invalid file type. Only PNG, JPEG, GIF, and SVG are allowed.'}), 400
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'ui')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    try:
+        # Generate unique filename
+        import uuid
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{asset_type}_{uuid.uuid4().hex}.{file_extension}"
+        file_path = os.path.join(upload_dir, unique_filename)
+        
+        # Save file
+        file.save(file_path)
+        
+        # Generate URL for the uploaded file
+        file_url = f"/api/static/uploads/ui/{unique_filename}"
+        
+        return jsonify({
+            'message': f'{asset_type.capitalize()} uploaded successfully',
+            'url': file_url,
+            'filename': unique_filename
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+@app.route('/api/static/uploads/ui/<filename>')
+def serve_ui_upload(filename):
+    """Serve uploaded UI assets"""
+    upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'ui')
+    return send_from_directory(upload_dir, filename)
 
 # WebSocket events
 @socketio.on('connect')

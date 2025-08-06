@@ -13,6 +13,7 @@ import ChangePassword from './pages/ChangePassword';
 import TwoFactorSettings from './pages/TwoFactorSettings';
 import AdminPanel from './pages/AdminPanel';
 import AdminSettings from './pages/AdminSettings';
+import CloudUICustomization from './pages/CloudUICustomization';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -156,6 +157,14 @@ function App() {
                   <SuperAdminRoute>
                     <AdminSettings />
                   </SuperAdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/ui-customization" 
+                element={
+                  <AdminRoute>
+                    <CloudUICustomization />
+                  </AdminRoute>
                 } 
               />
             </Routes>

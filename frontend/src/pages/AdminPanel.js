@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 
 const AdminPanel = () => {
@@ -133,6 +134,18 @@ const AdminPanel = () => {
   return (
     <div className="container">
       <h1>Admin Panel</h1>
+      
+      {/* Quick Actions */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <Link to="/admin/ui-customization" className="button" style={{ textDecoration: 'none' }}>
+          🎨 Cloud UI Customization
+        </Link>
+        {user?.is_admin && (
+          <Link to="/admin/settings" className="button button-secondary" style={{ textDecoration: 'none' }}>
+            ⚙️ System Settings
+          </Link>
+        )}
+      </div>
       
       {error && (
         <div className="alert alert-error">
