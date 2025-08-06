@@ -5,12 +5,21 @@ A complete cloud platform for managing LED screens with Android controllers. Fea
 ## Features
 
 ### 🎯 Core Functionality
-- **User Authentication**: Secure login/register system
+- **User Authentication**: Secure login/register system with 2FA support
+- **Admin System**: Two-tier administration (Super Admin + Administrator)
+- **Controller Management**: Self-registering controllers with assignment workflow
 - **Map Dashboard**: Interactive map showing all screen locations with real-time status
 - **Screen Management**: Add, edit, delete, and monitor LED screens
 - **Real-time Updates**: WebSocket-based live updates for screen status and data
 - **Data Analytics**: View and export screen data in JSON format
 - **Custom Naming**: Assign custom names to screens linked to serial numbers
+
+### 🔐 Security & Admin Features
+- **Role-Based Access**: Super Admin and Administrator roles
+- **2FA Authentication**: TOTP-based two-factor authentication
+- **Password Management**: Secure password change functionality
+- **Data Isolation**: Controllers only store data when assigned to users
+- **Admin Panel**: Comprehensive admin dashboard for user and controller management
 
 ### 🖥️ User Interface
 - **Responsive Design**: Works on desktop, tablet, and mobile
@@ -27,9 +36,12 @@ A complete cloud platform for managing LED screens with Android controllers. Fea
 - **Authentication**: Session-based with password hashing
 
 ### 📱 Android Integration
-- **API Endpoint**: `/api/device/update` for Android devices
+- **Controller Registration**: Automatic self-registration via encrypted API
+- **API Endpoint**: `/api/controller/register` for device registration
 - **Data Collection**: Location, serial number, status, and custom information
+- **Assignment Workflow**: Controllers register automatically, users assign by serial number
 - **Real-time Sync**: Immediate updates to dashboard when devices send data
+- **Data Security**: Only assigned controllers store data in database
 
 ## Quick Installation (Ubuntu Server 22.04)
 
@@ -221,6 +233,18 @@ With JSON payload:
 
 ### Device Integration
 - `POST /api/device/update` - Android device data update
+- `POST /api/controller/register` - Controller self-registration
+
+### Admin Management
+- `GET /api/admin/users` - List all users (admin only)
+- `POST /api/admin/users/{id}/toggle-admin` - Toggle user admin status
+- `POST /api/admin/create-admin` - Create initial admin account
+
+### User Security
+- `POST /api/user/change-password` - Change user password
+- `POST /api/user/2fa/setup` - Setup two-factor authentication
+- `POST /api/user/2fa/verify` - Verify and enable 2FA
+- `POST /api/user/2fa/disable` - Disable 2FA
 
 ## Database Schema
 
@@ -366,6 +390,28 @@ For support and questions:
 - Create an issue on GitHub
 - Check the troubleshooting section
 - Review the logs for error details
+
+## New Features (Latest Update)
+
+### Controller Self-Registration
+Controllers can now register themselves automatically without manual setup. Users can then assign controllers by entering their serial number.
+
+### Admin System
+- **Super Admin**: Full system access, can create administrators
+- **Administrator**: Can view all screens and manage users
+- **Admin Panel**: Comprehensive dashboard for system management
+
+### Enhanced Security
+- **Two-Factor Authentication**: TOTP-based 2FA with QR code setup
+- **Password Management**: Secure password change functionality
+- **User Profile**: Dropdown menu with security options
+
+### Data Protection
+- **Assignment-Based Storage**: Controllers only store data when assigned to users
+- **Data Isolation**: Prevents cross-user data access
+- **Admin Visibility**: Admins can see all controllers including unassigned ones
+
+For detailed documentation on new features, see [NEW_FEATURES.md](NEW_FEATURES.md).
 
 ---
 

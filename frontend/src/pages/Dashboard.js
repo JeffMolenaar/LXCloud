@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import io from 'socket.io-client';
 
@@ -32,8 +33,19 @@ const offlineIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+const unassignedIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 const Dashboard = () => {
+  const { user } = useAuth();
   const [screens, setScreens] = useState([]);
+  const [unassignedControllers, setUnassignedControllers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -71,7 +83,8 @@ const Dashboard = () => {
   const loadScreens = async () => {
     try {
       const response = await api.getScreens();
-      setScreens(response.data.screens);
+      setScreens(response.data.screens || []);
+      setUnassignedControllers(response.data.unassigned_controllers || []);
     } catch (error) {
       setError('Failed to load screens');
       console.error('Error loading screens:', error);
@@ -99,6 +112,8 @@ const Dashboard = () => {
   // Default center (Amsterdam, Netherlands)
   const mapCenter = [52.3676, 4.9041];
   const screensWithLocation = screens.filter(screen => screen.latitude && screen.longitude);
+  const controllersWithLocation = unassignedControllers.filter(controller => controller.latitude && controller.longitude);
+  const allDevicesWithLocation = [...screensWithLocation, ...controllersWithLocation];
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -129,7 +144,7 @@ const Dashboard = () => {
             
             {screensWithLocation.map((screen) => (
               <Marker
-                key={screen.id}
+                key={`screen-${screen.id}`}
                 position={[screen.latitude, screen.longitude]}
                 icon={screen.online_status ? onlineIcon : offlineIcon}
                 eventHandlers={{
@@ -141,6 +156,7 @@ const Dashboard = () => {
                     <h3>{screen.custom_name || screen.serial_number}</h3>
                     <p>Serial: {screen.serial_number}</p>
                     <p>Status: {screen.online_status ? 'Online' : 'Offline'}</p>
+                    <p>Assigned: {screen.assigned_user || 'Yes'}</p>
                     <p>Last seen: {screen.last_seen ? new Date(screen.last_seen).toLocaleString() : 'Never'}</p>
                     <button 
                       className="button" 
@@ -153,12 +169,33 @@ const Dashboard = () => {
                 </Popup>
               </Marker>
             ))}
+            
+            {(user?.is_admin || user?.is_administrator) && controllersWithLocation.map((controller) => (
+              <Marker
+                key={`controller-${controller.id}`}
+                position={[controller.latitude, controller.longitude]}
+                icon={unassignedIcon}
+              >
+                <Popup>
+                  <div>
+                    <h3>Unassigned Controller</h3>
+                    <p>Serial: {controller.serial_number}</p>
+                    <p>Status: {controller.online_status ? 'Online' : 'Offline'}</p>
+                    <p>Assigned: No</p>
+                    <p>Last seen: {controller.last_seen ? new Date(controller.last_seen).toLocaleString() : 'Never'}</p>
+                    <p style={{ color: '#f4642e', fontStyle: 'italic' }}>
+                      Available for assignment
+                    </p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
         </div>
         
-        {screensWithLocation.length === 0 && (
+        {allDevicesWithLocation.length === 0 && (
           <p style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>
-            No screens with location data available. Add screens and they will appear here once they send location updates.
+            No devices with location data available. Add screens and they will appear here once they send location updates.
           </p>
         )}
       </div>
@@ -168,22 +205,28 @@ const Dashboard = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
             <h3 style={{ color: '#667eea', margin: '0 0 5px 0' }}>{screens.length}</h3>
-            <p style={{ margin: 0, color: '#666' }}>Total Screens</p>
+            <p style={{ margin: 0, color: '#666' }}>Assigned Screens</p>
           </div>
+          {(user?.is_admin || user?.is_administrator) && (
+            <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
+              <h3 style={{ color: '#f4642e', margin: '0 0 5px 0' }}>{unassignedControllers.length}</h3>
+              <p style={{ margin: 0, color: '#666' }}>Unassigned Controllers</p>
+            </div>
+          )}
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
             <h3 style={{ color: '#28a745', margin: '0 0 5px 0' }}>
-              {screens.filter(s => s.online_status).length}
+              {[...screens, ...unassignedControllers].filter(s => s.online_status).length}
             </h3>
             <p style={{ margin: 0, color: '#666' }}>Online</p>
           </div>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
             <h3 style={{ color: '#dc3545', margin: '0 0 5px 0' }}>
-              {screens.filter(s => !s.online_status).length}
+              {[...screens, ...unassignedControllers].filter(s => !s.online_status).length}
             </h3>
             <p style={{ margin: 0, color: '#666' }}>Offline</p>
           </div>
           <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-            <h3 style={{ color: '#6c757d', margin: '0 0 5px 0' }}>{screensWithLocation.length}</h3>
+            <h3 style={{ color: '#6c757d', margin: '0 0 5px 0' }}>{allDevicesWithLocation.length}</h3>
             <p style={{ margin: 0, color: '#666' }}>With Location</p>
           </div>
         </div>
