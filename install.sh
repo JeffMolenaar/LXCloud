@@ -36,7 +36,12 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # Check if sudo is available
-if ! sudo -n true 2>/dev/null; then
+if ! command -v sudo >/dev/null 2>&1; then
+    error "sudo command not found. Please install sudo first."
+fi
+
+# Check if user has sudo privileges (check group membership or sudo access)
+if ! (groups | grep -qE '(sudo|wheel|admin)' || sudo -l >/dev/null 2>&1); then
     error "This script requires sudo privileges. Please ensure your user has sudo access."
 fi
 
