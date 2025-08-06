@@ -34,7 +34,7 @@ def configure_cors():
             allowed_origins.extend([
                 f'http://{local_ip}',
                 f'http://{local_ip}:3000',
-                f'http://{local_ip}:80'
+                f'http://{local_ip}:8080'
             ])
     except:
         pass
@@ -425,15 +425,15 @@ if __name__ == '__main__':
     print(f"Index.html exists: {os.path.exists(os.path.join(frontend_path, 'index.html'))}")
     print("")
     print("Access the application at:")
-    print("  - http://localhost:80")
-    print("  - http://127.0.0.1:80")
+    print("  - http://localhost:8080")
+    print("  - http://127.0.0.1:8080")
     
     try:
         import socket
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
         if local_ip and local_ip != '127.0.0.1':
-            print(f"  - http://{local_ip}:80 (local network)")
+            print(f"  - http://{local_ip}:8080 (local network)")
     except:
         pass
     
@@ -442,4 +442,4 @@ if __name__ == '__main__':
     print("Note: This is a standalone version for testing without database")
     print("=" * 60)
     
-    socketio.run(app, host='0.0.0.0', port=80, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=8080, debug=True, allow_unsafe_werkzeug=True)
