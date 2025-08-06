@@ -1,32 +1,20 @@
 #!/bin/bash
 
-# LXCloud Installation/Update Script for Ubuntu Server LTS 22.04
-# This script installs, updates and configures the complete LXCloud platform
-# Supports both fresh installations and updates from existing versions
+# LXCloud Installation Script for Ubuntu Server LTS 22.04
+# This script installs and configures the complete LXCloud platform
 
 set -e  # Exit on any error
-
-# Version information
-CURRENT_VERSION="1.1.0"
-MINIMUM_SUPPORTED_VERSION="1.0.0"
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Configuration flags
 CLEAN_OLD_DATA=false
 INTERACTIVE_MODE=true
-FORCE_UPDATE=false
-SKIP_BACKUP=false
-
-# Installation state
-EXISTING_INSTALLATION=false
-CURRENT_INSTALLED_VERSION=""
 
 # Logging function
 log() {
@@ -44,114 +32,6 @@ warning() {
 
 info() {
     echo -e "${BLUE}[INFO] $1${NC}"
-}
-
-success() {
-    echo -e "${PURPLE}[SUCCESS] $1${NC}"
-}
-
-# Function to detect existing installation
-detect_existing_installation() {
-    log "Checking for existing LXCloud installation..."
-    
-    # Check if systemd service exists
-    if [ -f "/etc/systemd/system/lxcloud-backend.service" ]; then
-        EXISTING_INSTALLATION=true
-        info "Found existing systemd service"
-    fi
-    
-    # Check if application directory exists
-    if [ -d "/opt/lxcloud" ]; then
-        EXISTING_INSTALLATION=true
-        info "Found existing application directory"
-        
-        # Try to get version from running service
-        if systemctl is-active --quiet lxcloud-backend 2>/dev/null; then
-            info "LXCloud backend service is running"
-            
-            # Try to get version via API
-            local version_response
-            version_response=$(curl -s --connect-timeout 5 http://localhost:5000/api/version 2>/dev/null || echo "")
-            
-            if [ -n "$version_response" ]; then
-                CURRENT_INSTALLED_VERSION=$(echo "$version_response" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('app_version', 'unknown'))
-except:
-    print('unknown')
-" 2>/dev/null || echo "unknown")
-                
-                if [ "$CURRENT_INSTALLED_VERSION" != "unknown" ]; then
-                    info "Detected installed version: $CURRENT_INSTALLED_VERSION"
-                else
-                    warning "Could not determine installed version from API"
-                fi
-            else
-                warning "Could not connect to LXCloud API to check version"
-            fi
-        else
-            info "LXCloud backend service is not running"
-        fi
-    fi
-    
-    # Check database
-    if command -v mysql >/dev/null 2>&1; then
-        if mysql -u lxcloud -plxcloud123 -e "USE lxcloud; SHOW TABLES;" >/dev/null 2>&1; then
-            EXISTING_INSTALLATION=true
-            info "Found existing LXCloud database"
-        fi
-    fi
-    
-    if [ "$EXISTING_INSTALLATION" = true ]; then
-        success "Existing LXCloud installation detected"
-        if [ -n "$CURRENT_INSTALLED_VERSION" ] && [ "$CURRENT_INSTALLED_VERSION" != "unknown" ]; then
-            info "Installed version: $CURRENT_INSTALLED_VERSION"
-            info "Available version: $CURRENT_VERSION"
-        fi
-    else
-        info "No existing installation found - will perform fresh installation"
-    fi
-}
-
-# Function to create database backup
-create_database_backup() {
-    local backup_file="/tmp/lxcloud_backup_$(date +%Y%m%d_%H%M%S).sql"
-    
-    log "Creating database backup..."
-    if mysqldump -u lxcloud -plxcloud123 lxcloud > "$backup_file" 2>/dev/null; then
-        success "Database backup created: $backup_file"
-        info "You can restore it later with: mysql -u lxcloud -plxcloud123 lxcloud < $backup_file"
-        return 0
-    else
-        warning "Failed to create database backup"
-        return 1
-    fi
-}
-
-# Function to compare versions
-version_greater_or_equal() {
-    local version1="$1"
-    local version2="$2"
-    
-    # Simple version comparison (assumes semantic versioning)
-    printf '%s\n%s\n' "$version2" "$version1" | sort -V -C
-}
-
-# Function to record installation/update
-record_installation() {
-    local install_type="$1"
-    local previous_version="$2"
-    local notes="$3"
-    
-    # Try to record in database if available
-    if command -v mysql >/dev/null 2>&1; then
-        mysql -u lxcloud -plxcloud123 lxcloud -e "
-            INSERT INTO app_info (app_version, install_type, previous_version, notes)
-            VALUES ('$CURRENT_VERSION', '$install_type', $([ -n "$previous_version" ] && echo "'$previous_version'" || echo "NULL"), $([ -n "$notes" ] && echo "'$notes'" || echo "NULL"));
-        " 2>/dev/null || true
-    fi
 }
 
 # Function to clean old data
@@ -205,39 +85,15 @@ while [[ $# -gt 0 ]]; do
             INTERACTIVE_MODE=false
             shift
             ;;
-        --force-update)
-            FORCE_UPDATE=true
-            shift
-            ;;
-        --skip-backup)
-            SKIP_BACKUP=true
-            shift
-            ;;
         -h|--help)
-            echo "LXCloud Installation/Update Script"
+            echo "LXCloud Installation Script"
             echo ""
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
             echo "  --clean-data        Clean all old LXCloud data before installation"
             echo "  --non-interactive   Run without interactive prompts"
-            echo "  --force-update      Force update even if versions match"
-            echo "  --skip-backup       Skip database backup during updates"
             echo "  -h, --help          Show this help message"
-            echo ""
-            echo "Installation Types:"
-            echo "  Fresh Install:      Run on a system without LXCloud"
-            echo "  Update:             Run on a system with existing LXCloud installation"
-            echo "  Clean Install:      Use --clean-data to remove all existing data"
-            echo ""
-            echo "Update Process:"
-            echo "  1. Detects existing installation and version"
-            echo "  2. Creates database backup (unless --skip-backup)"
-            echo "  3. Updates application files"
-            echo "  4. Runs database migrations"
-            echo "  5. Restarts services"
-            echo ""
-            echo "Version: $CURRENT_VERSION"
             echo ""
             exit 0
             ;;
@@ -274,136 +130,44 @@ if ! grep -q "Ubuntu 22.04" /etc/os-release; then
     fi
 fi
 
-log "Starting LXCloud installation/update process..."
-log "Target version: $CURRENT_VERSION"
+log "Starting LXCloud installation..."
 
-# Detect existing installation
-detect_existing_installation
-
-# Determine installation type and show appropriate prompts
-if [ "$EXISTING_INSTALLATION" = true ]; then
-    success "=== UPDATE MODE ==="
-    info "LXCloud installation detected"
+# Interactive data cleanup prompt
+if [ "$INTERACTIVE_MODE" = true ] && [ "$CLEAN_OLD_DATA" = false ]; then
+    echo
+    warning "IMPORTANT: Data Cleanup Options"
+    echo
+    info "This installer can clean up any existing LXCloud data before installation."
+    info "This includes:"
+    info "  - Database records (users, screens, data)"
+    info "  - Application files"
+    info "  - Configuration files"
+    echo
+    echo "Choose an option:"
+    echo "1. Clean install (remove all old data) - RECOMMENDED for fresh start"
+    echo "2. Keep existing data (may cause conflicts)"
+    echo "3. Exit and backup data manually"
+    echo
+    read -p "Enter your choice (1-3): " -n 1 -r
+    echo
+    echo
     
-    if [ -n "$CURRENT_INSTALLED_VERSION" ] && [ "$CURRENT_INSTALLED_VERSION" != "unknown" ]; then
-        info "Current version: $CURRENT_INSTALLED_VERSION"
-        info "Target version:  $CURRENT_VERSION"
-        
-        # Check if update is needed
-        if [ "$CURRENT_INSTALLED_VERSION" = "$CURRENT_VERSION" ] && [ "$FORCE_UPDATE" = false ]; then
-            success "LXCloud is already up to date (version $CURRENT_VERSION)"
-            info "Use --force-update to reinstall the same version"
+    case $REPLY in
+        1)
+            CLEAN_OLD_DATA=true
+            log "Will perform clean installation"
+            ;;
+        2)
+            log "Will keep existing data"
+            ;;
+        3)
+            info "Installation cancelled. Please backup your data and run the script again."
             exit 0
-        fi
-        
-        # Check if downgrade
-        if version_greater_or_equal "$CURRENT_INSTALLED_VERSION" "$CURRENT_VERSION" && [ "$CURRENT_INSTALLED_VERSION" != "$CURRENT_VERSION" ]; then
-            warning "You are trying to install an older version ($CURRENT_VERSION) over a newer one ($CURRENT_INSTALLED_VERSION)"
-            if [ "$INTERACTIVE_MODE" = true ]; then
-                read -p "Do you want to continue? (y/N): " -n 1 -r
-                echo
-                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                    info "Update cancelled"
-                    exit 0
-                fi
-            fi
-        fi
-    fi
-    
-    # Interactive update options
-    if [ "$INTERACTIVE_MODE" = true ] && [ "$CLEAN_OLD_DATA" = false ]; then
-        echo
-        info "=== UPDATE OPTIONS ==="
-        echo
-        info "Choose update type:"
-        echo "1. Standard update (preserve data, run migrations)"
-        echo "2. Clean update (remove all data and start fresh) - DATA LOSS WARNING"
-        echo "3. Exit and backup data manually"
-        echo
-        read -p "Enter your choice (1-3): " -n 1 -r
-        echo
-        echo
-        
-        case $REPLY in
-            1)
-                info "Will perform standard update with data preservation"
-                ;;
-            2)
-                CLEAN_OLD_DATA=true
-                warning "Will perform clean update - ALL DATA WILL BE LOST"
-                read -p "Are you absolutely sure? Type 'YES' to confirm: " confirm
-                if [ "$confirm" != "YES" ]; then
-                    info "Update cancelled"
-                    exit 0
-                fi
-                ;;
-            3)
-                info "Update cancelled. Please backup your data and run the script again."
-                info "Database backup command: mysqldump -u lxcloud -plxcloud123 lxcloud > backup.sql"
-                exit 0
-                ;;
-            *)
-                warning "Invalid choice. Defaulting to standard update."
-                ;;
-        esac
-    fi
-    
-    # Create backup for standard updates
-    if [ "$CLEAN_OLD_DATA" = false ] && [ "$SKIP_BACKUP" = false ]; then
-        if [ "$INTERACTIVE_MODE" = true ]; then
-            read -p "Create database backup before update? (Y/n): " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Nn]$ ]]; then
-                warning "Skipping database backup"
-            else
-                create_database_backup
-            fi
-        else
-            create_database_backup
-        fi
-    fi
-    
-else
-    success "=== FRESH INSTALLATION MODE ==="
-    info "No existing LXCloud installation found"
-    
-    # Interactive data cleanup prompt for fresh installs (in case of partial installs)
-    if [ "$INTERACTIVE_MODE" = true ] && [ "$CLEAN_OLD_DATA" = false ]; then
-        echo
-        warning "IMPORTANT: Data Cleanup Options"
-        echo
-        info "This installer can clean up any partial LXCloud data before installation."
-        info "This includes:"
-        info "  - Database records (users, screens, data)"
-        info "  - Application files"
-        info "  - Configuration files"
-        echo
-        echo "Choose an option:"
-        echo "1. Clean install (remove any old data) - RECOMMENDED for fresh start"
-        echo "2. Keep any existing data (may cause conflicts)"
-        echo "3. Exit and backup data manually"
-        echo
-        read -p "Enter your choice (1-3): " -n 1 -r
-        echo
-        echo
-        
-        case $REPLY in
-            1)
-                CLEAN_OLD_DATA=true
-                log "Will perform clean installation"
-                ;;
-            2)
-                log "Will keep any existing data"
-                ;;
-            3)
-                info "Installation cancelled. Please backup your data and run the script again."
-                exit 0
-                ;;
-            *)
-                warning "Invalid choice. Defaulting to keep existing data."
-                ;;
-        esac
-    fi
+            ;;
+        *)
+            warning "Invalid choice. Defaulting to keep existing data."
+            ;;
+    esac
 fi
 
 # Perform data cleanup if requested
@@ -699,29 +463,10 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo "Unable to determine")
 
-# Record this installation/update
-if [ "$EXISTING_INSTALLATION" = true ]; then
-    record_installation "update" "$CURRENT_INSTALLED_VERSION" "Updated via install.sh script"
-    INSTALL_TYPE="UPDATE"
-else
-    record_installation "fresh" "" "Fresh installation via install.sh script"
-    INSTALL_TYPE="INSTALLATION"
-fi
-
-log "$INSTALL_TYPE completed successfully!"
+log "Installation completed successfully!"
 info ""
 info "==================================================================="
-if [ "$EXISTING_INSTALLATION" = true ]; then
-    info "                    LXCloud Update Complete"
-    if [ -n "$CURRENT_INSTALLED_VERSION" ] && [ "$CURRENT_INSTALLED_VERSION" != "unknown" ]; then
-        info "                 $CURRENT_INSTALLED_VERSION → $CURRENT_VERSION"
-    else
-        info "                   Updated to $CURRENT_VERSION"
-    fi
-else
-    info "                    LXCloud Installation Complete"
-    info "                      Version $CURRENT_VERSION"
-fi
+info "                    LXCloud Installation Complete"
 info "==================================================================="
 info ""
 info "Your LXCloud platform is now ready!"
@@ -750,56 +495,42 @@ info "  Nginx Status:    sudo systemctl status nginx"
 info "  Restart Backend: sudo systemctl restart lxcloud-backend"
 info "  Restart Nginx:   sudo systemctl restart nginx"
 info ""
-if [ "$EXISTING_INSTALLATION" = false ]; then
-    info "Demo Data:"
-    info "  To create demo screens and data, run:"
-    info "  cd $APP_DIR && python3 create_demo_data.py"
-    info ""
-fi
+info "Demo Data:"
+info "  To create demo screens and data, run:"
+info "  cd $APP_DIR && python3 create_demo_data.py"
+info ""
 info "Data Management:"
 info "  Clean old data:  cd $APP_DIR && python3 cleanup_data.py"
 info "  Backup database: mysqldump -u lxcloud -plxcloud123 lxcloud > backup.sql"
-info "  Check version:   curl http://localhost:5000/api/version"
 info ""
 info "Configuration Files:"
 info "  Application:     $APP_DIR"
 info "  Nginx Config:    /etc/nginx/sites-available/lxcloud"
 info "  Service File:    /etc/systemd/system/lxcloud-backend.service"
 info ""
-if [ "$EXISTING_INSTALLATION" = false ]; then
-    info "Next Steps:"
-    info "1. Visit one of the access URLs above"
-    info "2. Register a new user account"
-    info "3. Add your LED screens using their serial numbers"
-    info "4. Configure your Android devices to send data to:"
-    info "   http://$SERVER_IP/api/device/update"
-    info ""
-fi
+info "Next Steps:"
+info "1. Visit one of the access URLs above"
+info "2. Register a new user account"
+info "3. Add your LED screens using their serial numbers"
+info "4. Configure your Android devices to send data to:"
+info "   http://$SERVER_IP/api/device/update"
+info ""
 info "Troubleshooting:"
 info "  If you can't access from other devices:"
 info "  - Check firewall: sudo ufw status"
 info "  - Verify network connectivity: ping $SERVER_IP"
 info "  - Check services: sudo systemctl status lxcloud-backend nginx"
 info ""
-info "Update Information:"
-info "  To update to future versions, simply run this script again"
-info "  Your data will be preserved unless you use --clean-data"
-info "  Automatic backups are created during updates"
-info ""
 info "==================================================================="
 
-# Optional: Create demo data (only for fresh installs)
-if [ "$EXISTING_INSTALLATION" = false ]; then
-    if [ "$INTERACTIVE_MODE" = true ]; then
-        read -p "Would you like to create demo screens and data for testing? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            log "Creating demo data..."
-            cd $APP_DIR
-            python3 create_demo_data.py
-            info "Demo data created! You can now test the platform with sample screens."
-        fi
-    fi
+# Optional: Create demo data
+read -p "Would you like to create demo screens and data for testing? (y/N): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    log "Creating demo data..."
+    cd $APP_DIR
+    python3 create_demo_data.py
+    info "Demo data created! You can now test the platform with sample screens."
 fi
 
-log "LXCloud installation/update script finished."
+log "LXCloud installation script finished."
