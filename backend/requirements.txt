@@ -6,3 +6,6 @@ Werkzeug==2.3.7
 python-socketio==5.8.0
 python-engineio==4.7.1
 cryptography>=3.4.8
+pyotp>=2.8.0
+qrcode>=7.4.0
+Pillow>=10.0.0

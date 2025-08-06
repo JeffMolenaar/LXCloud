@@ -31,6 +31,12 @@ const api = {
   logout: () => axios.post(`${API_BASE_URL}/logout`),
   getCurrentUser: () => axios.get(`${API_BASE_URL}/user`),
 
+  // User management
+  changePassword: (data) => axios.post(`${API_BASE_URL}/user/change-password`, data),
+  setup2FA: () => axios.post(`${API_BASE_URL}/user/2fa/setup`),
+  verify2FA: (data) => axios.post(`${API_BASE_URL}/user/2fa/verify`, data),
+  disable2FA: (data) => axios.post(`${API_BASE_URL}/user/2fa/disable`, data),
+
   // Screen management
   getScreens: () => axios.get(`${API_BASE_URL}/screens`),
   addScreen: (screenData) => axios.post(`${API_BASE_URL}/screens`, screenData),
@@ -38,8 +44,16 @@ const api = {
   deleteScreen: (screenId) => axios.delete(`${API_BASE_URL}/screens/${screenId}`),
   getScreenData: (screenId) => axios.get(`${API_BASE_URL}/screens/${screenId}/data`),
 
+  // Admin endpoints
+  getUsers: () => axios.get(`${API_BASE_URL}/admin/users`),
+  toggleUserAdmin: (userId) => axios.post(`${API_BASE_URL}/admin/users/${userId}/toggle-admin`),
+  createAdmin: (data) => axios.post(`${API_BASE_URL}/admin/create-admin`, data),
+
   // Device updates (for testing)
   deviceUpdate: (deviceData) => axios.post(`${API_BASE_URL}/device/update`, deviceData),
+  
+  // Controller registration
+  controllerRegister: (data) => axios.post(`${API_BASE_URL}/controller/register`, data),
 };
 
 export default api;

@@ -7,6 +7,10 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ScreenManagement from './pages/ScreenManagement';
 import ScreenData from './pages/ScreenData';
+import Profile from './pages/Profile';
+import ChangePassword from './pages/ChangePassword';
+import TwoFactorSettings from './pages/TwoFactorSettings';
+import AdminPanel from './pages/AdminPanel';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -16,6 +20,24 @@ const ProtectedRoute = ({ children }) => {
   }
   
   return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (!user?.is_admin && !user?.is_administrator) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
 };
 
 const PublicRoute = ({ children }) => {
@@ -73,6 +95,38 @@ function App() {
                 <ProtectedRoute>
                   <ScreenData />
                 </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/change-password" 
+              element={
+                <ProtectedRoute>
+                  <ChangePassword />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/2fa-settings" 
+              element={
+                <ProtectedRoute>
+                  <TwoFactorSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <AdminRoute>
+                  <AdminPanel />
+                </AdminRoute>
               } 
             />
           </Routes>

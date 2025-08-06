@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,6 +6,7 @@ const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -14,6 +15,14 @@ const Header = () => {
 
   const isActiveLink = (path) => {
     return location.pathname === path ? 'active' : '';
+  };
+
+  const toggleUserDropdown = () => {
+    setShowUserDropdown(!showUserDropdown);
+  };
+
+  const closeDropdown = () => {
+    setShowUserDropdown(false);
   };
 
   if (!isAuthenticated) {
@@ -45,12 +54,57 @@ const Header = () => {
           <Link to="/screens" className={`nav-link ${isActiveLink('/screens')}`}>
             Manage Screens
           </Link>
-          <span className="nav-link">Welcome, {user?.username}</span>
-          <button onClick={handleLogout} className="nav-link" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
-            Logout
-          </button>
+          {(user?.is_admin || user?.is_administrator) && (
+            <Link to="/admin" className={`nav-link ${isActiveLink('/admin')}`}>
+              Admin Panel
+            </Link>
+          )}
+          
+          <div className="user-dropdown-container">
+            <span 
+              className="nav-link user-dropdown-trigger" 
+              onClick={toggleUserDropdown}
+              style={{ cursor: 'pointer', position: 'relative' }}
+            >
+              Welcome, {user?.username} {user?.is_admin && '(Admin)'} {user?.is_administrator && '(Administrator)'} ▼
+            </span>
+            
+            {showUserDropdown && (
+              <div className="user-dropdown" onClick={closeDropdown}>
+                <Link to="/profile" className="dropdown-item">
+                  Profile Settings
+                </Link>
+                <Link to="/change-password" className="dropdown-item">
+                  Change Password
+                </Link>
+                <Link to="/2fa-settings" className="dropdown-item">
+                  Two-Factor Authentication
+                </Link>
+                <div className="dropdown-divider"></div>
+                <button onClick={handleLogout} className="dropdown-item logout-button">
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
       </div>
+      
+      {/* Overlay to close dropdown when clicking outside */}
+      {showUserDropdown && (
+        <div 
+          className="dropdown-overlay" 
+          onClick={closeDropdown}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 998
+          }}
+        />
+      )}
     </header>
   );
 };
