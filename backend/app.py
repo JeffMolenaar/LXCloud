@@ -6,6 +6,12 @@ import pymysql
 import os
 from datetime import datetime, timedelta
 import json
+import secrets
+import hashlib
+import pyotp
+import qrcode
+from io import BytesIO
+import base64
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'lxcloud-secret-key-change-in-production')
@@ -95,6 +101,36 @@ def get_db_connection():
         print("Please ensure MariaDB/MySQL is running and credentials are correct")
         raise
 
+def require_auth():
+    """Check if user is authenticated"""
+    if 'user_id' not in session:
+        return False, jsonify({'error': 'Not authenticated'}), 401
+    return True, None, None
+
+def require_admin():
+    """Check if user is admin or administrator"""
+    if 'user_id' not in session:
+        return False, jsonify({'error': 'Not authenticated'}), 401
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT is_admin, is_administrator FROM users WHERE id = %s",
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if not user or (not user[0] and not user[1]):
+        return False, jsonify({'error': 'Admin access required'}), 403
+    
+    return True, None, None
+
+def generate_registration_key():
+    """Generate a secure registration key for controllers"""
+    return secrets.token_urlsafe(32)
+
 def init_database():
     """Initialize database with required tables"""
     try:
@@ -108,7 +144,26 @@ def init_database():
                 username VARCHAR(50) UNIQUE NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
+                is_admin BOOLEAN DEFAULT FALSE,
+                is_administrator BOOLEAN DEFAULT FALSE,
+                two_fa_enabled BOOLEAN DEFAULT FALSE,
+                two_fa_secret VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Controllers registration table (for unassigned controllers)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS controllers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                serial_number VARCHAR(100) UNIQUE NOT NULL,
+                registration_key VARCHAR(255) NOT NULL,
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                online_status BOOLEAN DEFAULT FALSE,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                assigned BOOLEAN DEFAULT FALSE
             )
         """)
         
@@ -176,6 +231,58 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'version': '1.0.0'
     }), 200
+
+# Controller registration endpoint (encrypted API for controllers)
+@app.route('/api/controller/register', methods=['POST'])
+def controller_register():
+    """Controller registration endpoint for devices to register themselves"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        serial_number = data.get('serial_number', '').strip()
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        if not serial_number:
+            return jsonify({'error': 'Serial number is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if controller already exists
+        cursor.execute("SELECT id FROM controllers WHERE serial_number = %s", (serial_number,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Update existing controller
+            cursor.execute("""
+                UPDATE controllers 
+                SET latitude = %s, longitude = %s, online_status = TRUE, last_seen = CURRENT_TIMESTAMP
+                WHERE serial_number = %s
+            """, (latitude, longitude, serial_number))
+        else:
+            # Create new controller
+            registration_key = generate_registration_key()
+            cursor.execute("""
+                INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status)
+                VALUES (%s, %s, %s, %s, TRUE)
+            """, (serial_number, registration_key, latitude, longitude))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Controller registered successfully',
+            'serial_number': serial_number
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
 # Optional: Serve frontend if no nginx is configured
 @app.route('/')
@@ -381,7 +488,7 @@ def get_current_user():
         cursor = conn.cursor()
         
         cursor.execute(
-            "SELECT id, username, email FROM users WHERE id = %s",
+            "SELECT id, username, email, is_admin, is_administrator, two_fa_enabled FROM users WHERE id = %s",
             (session['user_id'],)
         )
         user = cursor.fetchone()
@@ -394,7 +501,14 @@ def get_current_user():
             return jsonify({'error': 'User not found'}), 404
         
         return jsonify({
-            'user': {'id': user[0], 'username': user[1], 'email': user[2]}
+            'user': {
+                'id': user[0], 
+                'username': user[1], 
+                'email': user[2],
+                'is_admin': bool(user[3]),
+                'is_administrator': bool(user[4]),
+                'two_fa_enabled': bool(user[5])
+            }
         }), 200
         
     except pymysql.Error as e:
@@ -402,45 +516,340 @@ def get_current_user():
     except Exception as e:
         return jsonify({'error': f'Failed to get user: {str(e)}'}), 500
 
-# Screen management routes
+@app.route('/api/user/change-password', methods=['POST'])
+def change_password():
+    """Change user password"""
+    auth_check, auth_response, auth_status = require_auth()
+    if not auth_check:
+        return auth_response, auth_status
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        
+        if not all([current_password, new_password]):
+            return jsonify({'error': 'Current password and new password are required'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'error': 'New password must be at least 6 characters long'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Verify current password
+        cursor.execute(
+            "SELECT password_hash FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+        
+        if not user or not check_password_hash(user[0], current_password):
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Current password is incorrect'}), 400
+        
+        # Update password
+        new_password_hash = generate_password_hash(new_password)
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s",
+            (new_password_hash, session['user_id'])
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': 'Password changed successfully'}), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Password change failed: {str(e)}'}), 500
+
+@app.route('/api/user/2fa/setup', methods=['POST'])
+def setup_2fa():
+    """Setup 2FA for user"""
+    auth_check, auth_response, auth_status = require_auth()
+    if not auth_check:
+        return auth_response, auth_status
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Generate secret
+        secret = pyotp.random_base32()
+        
+        # Get user info for QR code
+        cursor.execute(
+            "SELECT username, email FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+        
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Generate QR code
+        totp = pyotp.TOTP(secret)
+        qr_url = totp.provisioning_uri(
+            name=user[1],  # email
+            issuer_name="LXCloud"
+        )
+        
+        # Generate QR code image
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        qr_image_b64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        # Store secret (but don't enable yet)
+        cursor.execute(
+            "UPDATE users SET two_fa_secret = %s WHERE id = %s",
+            (secret, session['user_id'])
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'secret': secret,
+            'qr_code': f"data:image/png;base64,{qr_image_b64}",
+            'qr_url': qr_url
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'2FA setup failed: {str(e)}'}), 500
+
+@app.route('/api/user/2fa/verify', methods=['POST'])
+def verify_2fa():
+    """Verify and enable 2FA for user"""
+    auth_check, auth_response, auth_status = require_auth()
+    if not auth_check:
+        return auth_response, auth_status
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        token = data.get('token', '').strip()
+        
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get user's 2FA secret
+        cursor.execute(
+            "SELECT two_fa_secret FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+        
+        if not user or not user[0]:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': '2FA not set up'}), 400
+        
+        # Verify token
+        totp = pyotp.TOTP(user[0])
+        if not totp.verify(token):
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Invalid token'}), 400
+        
+        # Enable 2FA
+        cursor.execute(
+            "UPDATE users SET two_fa_enabled = TRUE WHERE id = %s",
+            (session['user_id'],)
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': '2FA enabled successfully'}), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'2FA verification failed: {str(e)}'}), 500
+
+@app.route('/api/user/2fa/disable', methods=['POST'])
+def disable_2fa():
+    """Disable 2FA for user"""
+    auth_check, auth_response, auth_status = require_auth()
+    if not auth_check:
+        return auth_response, auth_status
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        token = data.get('token', '').strip()
+        
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get user's 2FA secret
+        cursor.execute(
+            "SELECT two_fa_secret FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        user = cursor.fetchone()
+        
+        if not user or not user[0]:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': '2FA not enabled'}), 400
+        
+        # Verify token
+        totp = pyotp.TOTP(user[0])
+        if not totp.verify(token):
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Invalid token'}), 400
+        
+        # Disable 2FA
+        cursor.execute(
+            "UPDATE users SET two_fa_enabled = FALSE, two_fa_secret = NULL WHERE id = %s",
+            (session['user_id'],)
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': '2FA disabled successfully'}), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'2FA disable failed: {str(e)}'}), 500
 @app.route('/api/screens', methods=['GET'])
 def get_screens():
-    """Get all screens for current user"""
+    """Get all screens for current user or all screens for admin"""
     if 'user_id' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("""
-        SELECT s.id, s.serial_number, s.custom_name, s.latitude, s.longitude, 
-               s.online_status, s.last_seen, s.created_at
-        FROM screens s
-        WHERE s.user_id = %s
-        ORDER BY s.created_at DESC
-    """, (session['user_id'],))
+    # Check if user is admin
+    cursor.execute(
+        "SELECT is_admin, is_administrator FROM users WHERE id = %s",
+        (session['user_id'],)
+    )
+    user_roles = cursor.fetchone()
+    is_admin_user = user_roles and (user_roles[0] or user_roles[1])
     
-    screens = []
-    for row in cursor.fetchall():
-        screens.append({
-            'id': row[0],
-            'serial_number': row[1],
-            'custom_name': row[2],
-            'latitude': float(row[3]) if row[3] else None,
-            'longitude': float(row[4]) if row[4] else None,
-            'online_status': bool(row[5]),
-            'last_seen': row[6].isoformat() if row[6] else None,
-            'created_at': row[7].isoformat() if row[7] else None
-        })
-    
-    cursor.close()
-    conn.close()
-    
-    return jsonify({'screens': screens}), 200
+    if is_admin_user:
+        # Admin can see all screens and unassigned controllers
+        cursor.execute("""
+            SELECT s.id, s.serial_number, s.custom_name, s.latitude, s.longitude, 
+                   s.online_status, s.last_seen, s.created_at, u.username as assigned_user
+            FROM screens s
+            LEFT JOIN users u ON s.user_id = u.id
+            ORDER BY s.created_at DESC
+        """)
+        
+        screens = []
+        for row in cursor.fetchall():
+            screens.append({
+                'id': row[0],
+                'serial_number': row[1],
+                'custom_name': row[2],
+                'latitude': float(row[3]) if row[3] else None,
+                'longitude': float(row[4]) if row[4] else None,
+                'online_status': bool(row[5]),
+                'last_seen': row[6].isoformat() if row[6] else None,
+                'created_at': row[7].isoformat() if row[7] else None,
+                'assigned_user': row[8],
+                'assigned': bool(row[8])
+            })
+        
+        # Also get unassigned controllers
+        cursor.execute("""
+            SELECT id, serial_number, latitude, longitude, online_status, last_seen, created_at
+            FROM controllers
+            WHERE assigned = FALSE
+            ORDER BY created_at DESC
+        """)
+        
+        unassigned_controllers = []
+        for row in cursor.fetchall():
+            unassigned_controllers.append({
+                'id': row[0],
+                'serial_number': row[1],
+                'custom_name': None,
+                'latitude': float(row[2]) if row[2] else None,
+                'longitude': float(row[3]) if row[3] else None,
+                'online_status': bool(row[4]),
+                'last_seen': row[5].isoformat() if row[5] else None,
+                'created_at': row[6].isoformat() if row[6] else None,
+                'assigned_user': None,
+                'assigned': False,
+                'is_controller': True
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'screens': screens,
+            'unassigned_controllers': unassigned_controllers
+        }), 200
+    else:
+        # Regular user sees only their assigned screens
+        cursor.execute("""
+            SELECT s.id, s.serial_number, s.custom_name, s.latitude, s.longitude, 
+                   s.online_status, s.last_seen, s.created_at
+            FROM screens s
+            WHERE s.user_id = %s
+            ORDER BY s.created_at DESC
+        """, (session['user_id'],))
+        
+        screens = []
+        for row in cursor.fetchall():
+            screens.append({
+                'id': row[0],
+                'serial_number': row[1],
+                'custom_name': row[2],
+                'latitude': float(row[3]) if row[3] else None,
+                'longitude': float(row[4]) if row[4] else None,
+                'online_status': bool(row[5]),
+                'last_seen': row[6].isoformat() if row[6] else None,
+                'created_at': row[7].isoformat() if row[7] else None,
+                'assigned': True
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'screens': screens}), 200
 
 @app.route('/api/screens', methods=['POST'])
 def add_screen():
-    """Add a new screen"""
+    """Add a new screen by serial number (assign controller to user)"""
     if 'user_id' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -454,32 +863,62 @@ def add_screen():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Check if screen already exists
-    cursor.execute("SELECT id FROM screens WHERE serial_number = %s", (serial_number,))
-    if cursor.fetchone():
+    # Check if screen already exists (already assigned)
+    cursor.execute("SELECT id, user_id FROM screens WHERE serial_number = %s", (serial_number,))
+    existing_screen = cursor.fetchone()
+    if existing_screen:
         cursor.close()
         conn.close()
-        return jsonify({'error': 'Screen with this serial number already exists'}), 400
+        return jsonify({'error': 'Screen with this serial number is already assigned to a user'}), 400
     
-    # Add screen
-    cursor.execute("""
-        INSERT INTO screens (serial_number, user_id, custom_name)
-        VALUES (%s, %s, %s)
-    """, (serial_number, session['user_id'], custom_name))
+    # Check if controller exists in controllers table
+    cursor.execute("SELECT id, latitude, longitude, online_status FROM controllers WHERE serial_number = %s AND assigned = FALSE", (serial_number,))
+    controller = cursor.fetchone()
     
-    screen_id = cursor.lastrowid
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    return jsonify({
-        'message': 'Screen added successfully',
-        'screen': {
-            'id': screen_id,
-            'serial_number': serial_number,
-            'custom_name': custom_name
-        }
-    }), 201
+    if controller:
+        # Move controller to screens table and mark as assigned
+        cursor.execute("""
+            INSERT INTO screens (serial_number, user_id, custom_name, latitude, longitude, online_status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (serial_number, session['user_id'], custom_name, controller[1], controller[2], controller[3]))
+        
+        screen_id = cursor.lastrowid
+        
+        # Mark controller as assigned
+        cursor.execute("UPDATE controllers SET assigned = TRUE WHERE id = %s", (controller[0],))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Controller assigned successfully',
+            'screen': {
+                'id': screen_id,
+                'serial_number': serial_number,
+                'custom_name': custom_name
+            }
+        }), 201
+    else:
+        # Create new screen (old behavior for backwards compatibility)
+        cursor.execute("""
+            INSERT INTO screens (serial_number, user_id, custom_name)
+            VALUES (%s, %s, %s)
+        """, (serial_number, session['user_id'], custom_name))
+        
+        screen_id = cursor.lastrowid
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Screen added successfully (controller will be available when it registers)',
+            'screen': {
+                'id': screen_id,
+                'serial_number': serial_number,
+                'custom_name': custom_name
+            }
+        }), 201
 
 @app.route('/api/screens/<int:screen_id>', methods=['PUT'])
 def update_screen(screen_id):
@@ -600,48 +1039,212 @@ def device_update():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Find screen by serial number
-    cursor.execute("SELECT id FROM screens WHERE serial_number = %s", (serial_number,))
+    # First check if this is an assigned screen
+    cursor.execute("SELECT id, user_id FROM screens WHERE serial_number = %s", (serial_number,))
     screen = cursor.fetchone()
     
-    if not screen:
+    if screen:
+        # This is an assigned screen, store data
+        screen_id = screen[0]
+        current_year = datetime.now().year
+        
+        # Update screen location and status
+        cursor.execute("""
+            UPDATE screens
+            SET latitude = %s, longitude = %s, online_status = TRUE, last_seen = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (latitude, longitude, screen_id))
+        
+        # Add data entry if information provided (only for assigned screens)
+        if information:
+            cursor.execute("""
+                INSERT INTO screen_data (screen_id, information, year)
+                VALUES (%s, %s, %s)
+            """, (screen_id, information, current_year))
+        
+        conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'error': 'Screen not found'}), 404
+        
+        # Emit real-time update to connected clients
+        socketio.emit('screen_update', {
+            'screen_id': screen_id,
+            'serial_number': serial_number,
+            'latitude': latitude,
+            'longitude': longitude,
+            'online_status': True,
+            'information': information,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        return jsonify({'message': 'Update received successfully'}), 200
+    else:
+        # Check if this is an unassigned controller
+        cursor.execute("SELECT id FROM controllers WHERE serial_number = %s", (serial_number,))
+        controller = cursor.fetchone()
+        
+        if controller:
+            # Update existing unassigned controller (don't store data)
+            cursor.execute("""
+                UPDATE controllers
+                SET latitude = %s, longitude = %s, online_status = TRUE, last_seen = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (latitude, longitude, controller[0]))
+        else:
+            # Create new unassigned controller
+            registration_key = generate_registration_key()
+            cursor.execute("""
+                INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status)
+                VALUES (%s, %s, %s, %s, TRUE)
+            """, (serial_number, registration_key, latitude, longitude))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': 'Controller update received (not assigned to user yet)'}), 200
+
+# Admin management routes
+@app.route('/api/admin/users', methods=['GET'])
+def admin_get_users():
+    """Get all users (admin only)"""
+    admin_check, admin_response, admin_status = require_admin()
+    if not admin_check:
+        return admin_response, admin_status
     
-    screen_id = screen[0]
-    current_year = datetime.now().year
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
-    # Update screen location and status
     cursor.execute("""
-        UPDATE screens
-        SET latitude = %s, longitude = %s, online_status = TRUE, last_seen = CURRENT_TIMESTAMP
-        WHERE id = %s
-    """, (latitude, longitude, screen_id))
+        SELECT id, username, email, is_admin, is_administrator, two_fa_enabled, created_at
+        FROM users
+        ORDER BY created_at DESC
+    """)
     
-    # Add data entry if information provided
-    if information:
-        cursor.execute("""
-            INSERT INTO screen_data (screen_id, information, year)
-            VALUES (%s, %s, %s)
-        """, (screen_id, information, current_year))
+    users = []
+    for row in cursor.fetchall():
+        users.append({
+            'id': row[0],
+            'username': row[1],
+            'email': row[2],
+            'is_admin': bool(row[3]),
+            'is_administrator': bool(row[4]),
+            'two_fa_enabled': bool(row[5]),
+            'created_at': row[6].isoformat() if row[6] else None
+        })
+    
+    cursor.close()
+    conn.close()
+    
+    return jsonify({'users': users}), 200
+
+@app.route('/api/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+def admin_toggle_user_admin(user_id):
+    """Toggle administrator flag for a user (admin only)"""
+    admin_check, admin_response, admin_status = require_admin()
+    if not admin_check:
+        return admin_response, admin_status
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Don't allow modifying super admin
+    cursor.execute("SELECT is_admin FROM users WHERE id = %s", (user_id,))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'User not found'}), 404
+    
+    if user[0]:  # is_admin
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'Cannot modify super admin'}), 403
+    
+    # Toggle administrator flag
+    cursor.execute("""
+        UPDATE users 
+        SET is_administrator = NOT is_administrator 
+        WHERE id = %s
+    """, (user_id,))
     
     conn.commit()
     cursor.close()
     conn.close()
     
-    # Emit real-time update to connected clients
-    socketio.emit('screen_update', {
-        'screen_id': screen_id,
-        'serial_number': serial_number,
-        'latitude': latitude,
-        'longitude': longitude,
-        'online_status': True,
-        'information': information,
-        'timestamp': datetime.now().isoformat()
-    })
-    
-    return jsonify({'message': 'Update received successfully'}), 200
+    return jsonify({'message': 'User administrator status toggled'}), 200
+
+@app.route('/api/admin/create-admin', methods=['POST'])
+def create_admin():
+    """Create initial admin account (only works if no admin exists)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        admin_key = data.get('admin_key', '')
+        
+        # Validation
+        if not all([username, email, password, admin_key]):
+            return jsonify({'error': 'Username, email, password, and admin key are required'}), 400
+        
+        # Check admin key (simple security measure)
+        if admin_key != 'lxcloud-admin-setup-2024':
+            return jsonify({'error': 'Invalid admin key'}), 403
+        
+        if len(username) < 3:
+            return jsonify({'error': 'Username must be at least 3 characters long'}), 400
+            
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+        
+        # Basic email validation
+        if '@' not in email or '.' not in email:
+            return jsonify({'error': 'Please provide a valid email address'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if any admin already exists
+        cursor.execute("SELECT id FROM users WHERE is_admin = TRUE")
+        existing_admin = cursor.fetchone()
+        if existing_admin:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Admin account already exists'}), 400
+        
+        # Check if user exists
+        cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", (username, email))
+        existing_user = cursor.fetchone()
+        if existing_user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Username or email already exists'}), 400
+        
+        # Create admin user
+        password_hash = generate_password_hash(password)
+        cursor.execute("""
+            INSERT INTO users (username, email, password_hash, is_admin)
+            VALUES (%s, %s, %s, TRUE)
+        """, (username, email, password_hash))
+        
+        user_id = cursor.lastrowid
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Admin account created successfully',
+            'user': {'id': user_id, 'username': username, 'email': email}
+        }), 201
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Admin creation failed: {str(e)}'}), 500
 
 # WebSocket events
 @socketio.on('connect')
