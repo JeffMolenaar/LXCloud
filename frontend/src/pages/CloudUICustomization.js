@@ -199,6 +199,9 @@ const CloudUICustomization = () => {
       if (user?.is_admin && loadedSettings.favicon_url) {
         setAdminSettings(prev => ({ ...prev, faviconUrl: loadedSettings.favicon_url }));
       }
+      if (user?.is_admin && loadedSettings.app_name) {
+        setAdminSettings(prev => ({ ...prev, logoText: loadedSettings.app_name }));
+      }
     } catch (error) {
       if (error.response?.status === 404) {
         // Settings don't exist yet, use defaults
@@ -228,6 +231,9 @@ const CloudUICustomization = () => {
       if (loadedAdminSettings.faviconUrl) {
         setUiSettings(prev => ({ ...prev, favicon_url: loadedAdminSettings.faviconUrl }));
       }
+      if (loadedAdminSettings.logoText) {
+        setUiSettings(prev => ({ ...prev, app_name: loadedAdminSettings.logoText }));
+      }
     } catch (error) {
       if (error.response?.status === 404) {
         console.log('Admin settings not found, using defaults');
@@ -243,12 +249,14 @@ const CloudUICustomization = () => {
       [field]: value
     }));
     
-    // Sync with admin settings for super admins
+    // Sync with admin settings for super admins - ensure bidirectional sync
     if (user?.is_admin) {
       if (field === 'logo_url') {
-        handleAdminInputChange('logoUrl', value);
+        setAdminSettings(prev => ({ ...prev, logoUrl: value }));
       } else if (field === 'favicon_url') {
-        handleAdminInputChange('faviconUrl', value);
+        setAdminSettings(prev => ({ ...prev, faviconUrl: value }));
+      } else if (field === 'app_name') {
+        setAdminSettings(prev => ({ ...prev, logoText: value }));
       }
     }
   };
@@ -259,11 +267,13 @@ const CloudUICustomization = () => {
       [field]: value
     }));
     
-    // Sync with UI settings for logo and favicon
+    // Sync with UI settings for logo and favicon - ensure bidirectional sync
     if (field === 'logoUrl') {
       setUiSettings(prev => ({ ...prev, logo_url: value }));
     } else if (field === 'faviconUrl') {
       setUiSettings(prev => ({ ...prev, favicon_url: value }));
+    } else if (field === 'logoText') {
+      setUiSettings(prev => ({ ...prev, app_name: value }));
     }
   };
 
@@ -696,27 +706,74 @@ const CloudUICustomization = () => {
               borderRadius: '8px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              height: (uiSettings.header_height || '60px').replace('px', '') + 'px',
+              boxShadow: uiSettings.header_shadow === 'true' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                {uiSettings.logo_url ? (
+                {(uiSettings.logo_url || adminSettings.logoUrl) ? (
                   <img 
-                    src={uiSettings.logo_url} 
+                    src={uiSettings.logo_url || adminSettings.logoUrl} 
                     alt="Logo" 
-                    style={{ height: '30px', maxWidth: '150px', objectFit: 'contain' }}
+                    style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'inline';
+                    }}
                   />
-                ) : (
-                  <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                    {uiSettings.app_name || 'LXCloud'}
-                  </span>
-                )}
+                ) : null}
+                <span style={{ 
+                  fontSize: '1.5rem', 
+                  fontWeight: 'bold',
+                  color: uiSettings.header_text_color || '#ffffff',
+                  display: (uiSettings.logo_url || adminSettings.logoUrl) ? 'none' : 'inline'
+                }}>
+                  {uiSettings.app_name || adminSettings.logoText || 'LXCloud'}
+                </span>
               </div>
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Dashboard</span>
-                <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Manage Screens</span>
-                <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Admin Panel</span>
+              <div style={{ 
+                display: 'flex', 
+                gap: uiSettings.header_button_spacing || '15px',
+                justifyContent: uiSettings.header_button_alignment === 'center' ? 'center' :
+                             uiSettings.header_button_alignment === 'right' ? 'flex-end' :
+                             uiSettings.header_button_alignment === 'left' ? 'flex-start' : 'flex-end',
+                alignItems: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                          uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+              }}>
+                <span style={{ 
+                  color: uiSettings.header_text_color || '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
+                  background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                }}>Dashboard</span>
+                <span style={{ 
+                  color: uiSettings.header_text_color || '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
+                  background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                }}>Manage Screens</span>
+                <span style={{ 
+                  color: uiSettings.header_text_color || '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
+                  background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                }}>Admin Panel</span>
+                <span style={{ 
+                  color: uiSettings.header_text_color || '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
+                  background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                }}>Welcome, User ▼</span>
               </div>
             </div>
+            <small style={{ color: '#666', marginTop: '10px', display: 'block' }}>
+              ⬆️ This preview shows how your header will look with the current settings. 
+              The actual header should match this preview exactly.
+            </small>
           </div>
 
           {/* Super Admin Advanced Settings (only for super admins) */}

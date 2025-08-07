@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useTheme } from '../context/ThemeContext';
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { settings } = useSettings();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -59,10 +61,10 @@ const Header = () => {
     <header className="header">
       <div className="header-content">
         <div className="logo">
-          {settings.logoUrl ? (
+          {(theme.logo_url || settings.logoUrl) ? (
             <img 
-              src={settings.logoUrl} 
-              alt={settings.logoText} 
+              src={theme.logo_url || settings.logoUrl} 
+              alt={theme.app_name || settings.logoText} 
               style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
               onError={(e) => {
                 e.target.style.display = 'none';
@@ -70,8 +72,8 @@ const Header = () => {
               }}
             />
           ) : null}
-          <span style={{ display: settings.logoUrl ? 'none' : 'inline' }}>
-            {settings.logoText}
+          <span style={{ display: (theme.logo_url || settings.logoUrl) ? 'none' : 'inline' }}>
+            {theme.app_name || settings.logoText}
           </span>
         </div>
         <nav className="nav-links">
