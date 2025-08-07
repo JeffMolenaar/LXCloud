@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -74,10 +75,11 @@ function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <Router>
-          <div className="App">
-            <Header />
-            <Routes>
+        <ThemeProvider>
+          <Router>
+            <div className="App">
+              <Header />
+              <Routes>
               <Route 
                 path="/login" 
                 element={
@@ -161,8 +163,9 @@ function App() {
             </Routes>
           </div>
         </Router>
-      </SettingsProvider>
-    </AuthProvider>
+      </ThemeProvider>
+    </SettingsProvider>
+  </AuthProvider>
   );
 }
 

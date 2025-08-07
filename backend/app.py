@@ -325,9 +325,13 @@ def run_database_migrations():
                     ('app_name', 'LXCloud'),
                     ('primary_color', '#667eea'),
                     ('secondary_color', '#f093fb'),
+                    ('header_color', '#667eea'),
+                    ('button_color', '#667eea'),
+                    ('button_hover_color', '#5a6fd8'),
                     ('logo_url', ''),
                     ('favicon_url', ''),
-                    ('background_image_url', '')
+                    ('background_image_url', ''),
+                    ('custom_button_images', '{}')
                 ]
                 
                 for key, value in default_ui_settings:
@@ -1846,9 +1850,13 @@ def get_ui_settings():
             'app_name': 'LXCloud',
             'primary_color': '#667eea',
             'secondary_color': '#f093fb',
+            'header_color': '#667eea',
+            'button_color': '#667eea',
+            'button_hover_color': '#5a6fd8',
             'logo_url': '',
             'favicon_url': '',
-            'background_image_url': ''
+            'background_image_url': '',
+            'custom_button_images': '{}'
         }
         
         # Merge defaults with saved settings
@@ -1880,7 +1888,7 @@ def update_ui_settings():
     
     try:
         # Update or insert each setting
-        allowed_settings = ['app_name', 'primary_color', 'secondary_color', 'logo_url', 'favicon_url', 'background_image_url']
+        allowed_settings = ['app_name', 'primary_color', 'secondary_color', 'header_color', 'button_color', 'button_hover_color', 'logo_url', 'favicon_url', 'background_image_url', 'custom_button_images']
         
         for key, value in data.items():
             if key in allowed_settings:
