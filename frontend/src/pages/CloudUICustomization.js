@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 
 const CloudUICustomization = () => {
   const { user } = useAuth();
   const { settings, updateSettings } = useSettings();
+  const { theme, updateTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -13,9 +15,13 @@ const CloudUICustomization = () => {
     app_name: 'LXCloud',
     primary_color: '#667eea',
     secondary_color: '#f093fb',
+    header_color: '#667eea',
+    button_color: '#667eea',
+    button_hover_color: '#5a6fd8',
     logo_url: '',
     favicon_url: '',
-    background_image_url: ''
+    background_image_url: '',
+    custom_button_images: '{}'
   });
   // Super admin settings (from AdminSettings.js)
   const [adminSettings, setAdminSettings] = useState({
@@ -31,6 +37,9 @@ const CloudUICustomization = () => {
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [uploadingMapMarkerOnline, setUploadingMapMarkerOnline] = useState(false);
   const [uploadingMapMarkerOffline, setUploadingMapMarkerOffline] = useState(false);
+  const [uploadingButtonImage, setUploadingButtonImage] = useState('');
+  const [customButtonImages, setCustomButtonImages] = useState({});
+  const [selectedButtonType, setSelectedButtonType] = useState('');
 
   useEffect(() => {
     if (!user?.is_admin && !user?.is_administrator) {
@@ -51,6 +60,15 @@ const CloudUICustomization = () => {
       const response = await api.getUISettings();
       const loadedSettings = response.data.settings || uiSettings;
       setUiSettings(loadedSettings);
+      
+      // Parse custom button images
+      try {
+        const buttonImages = JSON.parse(loadedSettings.custom_button_images || '{}');
+        setCustomButtonImages(buttonImages);
+      } catch (e) {
+        console.error('Error parsing custom button images:', e);
+        setCustomButtonImages({});
+      }
       
       // Sync with admin settings for super admins
       if (user?.is_admin && loadedSettings.logo_url) {
@@ -155,6 +173,7 @@ const CloudUICustomization = () => {
       else if (type === 'background') setUploadingBackground(true);
       else if (type === 'map_marker_online') setUploadingMapMarkerOnline(true);
       else if (type === 'map_marker_offline') setUploadingMapMarkerOffline(true);
+      else if (type.startsWith('button_')) setUploadingButtonImage(type);
 
       const response = await api.uploadUIAsset(formData);
       
@@ -163,6 +182,12 @@ const CloudUICustomization = () => {
         handleAdminInputChange('mapMarkerOnline', response.data.url);
       } else if (type === 'map_marker_offline') {
         handleAdminInputChange('mapMarkerOffline', response.data.url);
+      } else if (type.startsWith('button_')) {
+        // Handle button image uploads
+        const buttonType = type.replace('button_', '');
+        const updatedButtonImages = { ...customButtonImages, [buttonType]: response.data.url };
+        setCustomButtonImages(updatedButtonImages);
+        handleInputChange('custom_button_images', JSON.stringify(updatedButtonImages));
       } else {
         handleInputChange(`${type}_url`, response.data.url);
         
@@ -188,6 +213,7 @@ const CloudUICustomization = () => {
       else if (type === 'background') setUploadingBackground(false);
       else if (type === 'map_marker_online') setUploadingMapMarkerOnline(false);
       else if (type === 'map_marker_offline') setUploadingMapMarkerOffline(false);
+      else if (type.startsWith('button_')) setUploadingButtonImage('');
     }
   };
 
@@ -197,6 +223,9 @@ const CloudUICustomization = () => {
       
       // Save UI settings
       await api.updateUISettings(uiSettings);
+      
+      // Update theme with the new settings
+      await updateTheme(uiSettings);
       
       // For super admins, also save admin settings and update the settings context
       if (user?.is_admin) {
@@ -215,14 +244,21 @@ const CloudUICustomization = () => {
 
   const resetToDefaults = () => {
     if (confirm('Are you sure you want to reset all settings to defaults? This will not delete uploaded files.')) {
-      setUiSettings({
+      const defaultSettings = {
         app_name: 'LXCloud',
         primary_color: '#667eea',
         secondary_color: '#f093fb',
+        header_color: '#667eea',
+        button_color: '#667eea',
+        button_hover_color: '#5a6fd8',
         logo_url: '',
         favicon_url: '',
-        background_image_url: ''
-      });
+        background_image_url: '',
+        custom_button_images: '{}'
+      };
+      
+      setUiSettings(defaultSettings);
+      setCustomButtonImages({});
       
       if (user?.is_admin) {
         setAdminSettings({
@@ -328,6 +364,230 @@ const CloudUICustomization = () => {
                 placeholder="#f093fb"
                 style={{ flex: 1 }}
               />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Header Color</label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={uiSettings.header_color}
+                onChange={(e) => handleInputChange('header_color', e.target.value)}
+                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.header_color}
+                onChange={(e) => handleInputChange('header_color', e.target.value)}
+                placeholder="#667eea"
+                style={{ flex: 1 }}
+              />
+            </div>
+            <small style={{ color: '#666' }}>
+              This color will be applied to the header background
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Button Customization</h2>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+          <div className="form-group">
+            <label className="form-label">Button Color</label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={uiSettings.button_color}
+                onChange={(e) => handleInputChange('button_color', e.target.value)}
+                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.button_color}
+                onChange={(e) => handleInputChange('button_color', e.target.value)}
+                placeholder="#667eea"
+                style={{ flex: 1 }}
+              />
+            </div>
+            <small style={{ color: '#666' }}>
+              Default color for all buttons
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Button Hover Color</label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={uiSettings.button_hover_color}
+                onChange={(e) => handleInputChange('button_hover_color', e.target.value)}
+                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.button_hover_color}
+                onChange={(e) => handleInputChange('button_hover_color', e.target.value)}
+                placeholder="#5a6fd8"
+                style={{ flex: 1 }}
+              />
+            </div>
+            <small style={{ color: '#666' }}>
+              Color when hovering over buttons
+            </small>
+          </div>
+        </div>
+
+        <div className="form-group" style={{ marginTop: '30px' }}>
+          <label className="form-label">Custom Button Images</label>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            Upload custom images to replace specific button types. The image will replace the button background.
+          </p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            {['primary', 'secondary', 'danger', 'success', 'warning'].map((buttonType) => (
+              <div key={buttonType} className="form-group">
+                <label className="form-label" style={{ textTransform: 'capitalize' }}>
+                  {buttonType} Button Image
+                </label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e.target.files[0], `button_${buttonType}`)}
+                      disabled={uploadingButtonImage === `button_${buttonType}`}
+                      style={{ marginBottom: '10px' }}
+                    />
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={customButtonImages[buttonType] || ''}
+                      onChange={(e) => {
+                        const updatedImages = { ...customButtonImages, [buttonType]: e.target.value };
+                        setCustomButtonImages(updatedImages);
+                        handleInputChange('custom_button_images', JSON.stringify(updatedImages));
+                      }}
+                      placeholder={`${buttonType} button image URL`}
+                      disabled={uploadingButtonImage === `button_${buttonType}`}
+                    />
+                    <small style={{ color: '#666' }}>
+                      Upload an image or enter URL for {buttonType} buttons
+                    </small>
+                  </div>
+                  {customButtonImages[buttonType] && (
+                    <div style={{ 
+                      width: '80px', 
+                      height: '40px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      border: '1px solid #ddd', 
+                      borderRadius: '4px', 
+                      overflow: 'hidden',
+                      backgroundImage: `url(${customButtonImages[buttonType]})`,
+                      backgroundSize: 'contain',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center'
+                    }}>
+                      <span style={{ 
+                        fontSize: '12px', 
+                        color: 'transparent',
+                        textShadow: '0 0 3px rgba(0,0,0,0.5)'
+                      }}>
+                        Preview
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {uploadingButtonImage === `button_${buttonType}` && (
+                  <div style={{ color: '#666', fontSize: '14px' }}>
+                    Uploading {buttonType} button image...
+                  </div>
+                )}
+                {customButtonImages[buttonType] && (
+                  <div style={{ marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      className={`button button-${buttonType === 'primary' ? '' : 'secondary'}`}
+                      style={{ 
+                        background: customButtonImages[buttonType] ? 
+                          `url(${customButtonImages[buttonType]}) center/contain no-repeat` : 
+                          undefined,
+                        color: customButtonImages[buttonType] ? 'transparent' : undefined,
+                        minHeight: '40px'
+                      }}
+                    >
+                      {buttonType.charAt(0).toUpperCase() + buttonType.slice(1)} Button Preview
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-danger button-small"
+                      onClick={() => {
+                        const updatedImages = { ...customButtonImages };
+                        delete updatedImages[buttonType];
+                        setCustomButtonImages(updatedImages);
+                        handleInputChange('custom_button_images', JSON.stringify(updatedImages));
+                      }}
+                      style={{ marginLeft: '10px' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Color Preview</h2>
+        <div style={{ display: 'grid', gap: '20px' }}>
+          <div>
+            <h4>Header Preview</h4>
+            <div style={{ 
+              background: uiSettings.header_color || '#667eea', 
+              color: 'white', 
+              padding: '15px', 
+              borderRadius: '8px' 
+            }}>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                {uiSettings.app_name || 'LXCloud'}
+              </span>
+            </div>
+          </div>
+          
+          <div>
+            <h4>Button Preview</h4>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button 
+                type="button"
+                className="button"
+                style={{ 
+                  background: uiSettings.button_color || '#667eea',
+                  borderColor: uiSettings.button_color || '#667eea'
+                }}
+              >
+                Primary Button
+              </button>
+              <button 
+                type="button"
+                className="button button-secondary"
+              >
+                Secondary Button
+              </button>
+              <button 
+                type="button"
+                className="button button-danger"
+              >
+                Danger Button
+              </button>
             </div>
           </div>
         </div>
@@ -639,8 +899,8 @@ const CloudUICustomization = () => {
           type="button"
           className="button"
           onClick={saveUISettings}
-          disabled={loading || uploadingLogo || uploadingFavicon || uploadingBackground || uploadingMapMarkerOnline || uploadingMapMarkerOffline}
-          style={{ backgroundColor: uiSettings.primary_color, borderColor: uiSettings.primary_color }}
+          disabled={loading || uploadingLogo || uploadingFavicon || uploadingBackground || uploadingMapMarkerOnline || uploadingMapMarkerOffline || uploadingButtonImage}
+          style={{ backgroundColor: uiSettings.button_color, borderColor: uiSettings.button_color }}
         >
           {loading ? 'Saving...' : 'Save Settings'}
         </button>
