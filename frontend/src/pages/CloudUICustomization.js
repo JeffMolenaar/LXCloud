@@ -12,6 +12,7 @@ const CloudUICustomization = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uiSettings, setUiSettings] = useState({
+    // Original settings
     app_name: 'LXCloud',
     primary_color: '#667eea',
     secondary_color: '#f093fb',
@@ -21,7 +22,63 @@ const CloudUICustomization = () => {
     logo_url: '',
     favicon_url: '',
     background_image_url: '',
-    custom_button_images: '{}'
+    custom_button_images: '{}',
+    
+    // Footer customization
+    footer_enabled: 'true',
+    footer_text: 'Powered by LXCloud',
+    footer_color: '#f8f9fa',
+    footer_text_color: '#6c757d',
+    footer_links: '{}',
+    
+    // Typography settings
+    font_family: 'system-ui, -apple-system, sans-serif',
+    font_size_base: '16px',
+    font_size_heading: '24px',
+    line_height: '1.5',
+    
+    // Navigation customization
+    nav_style: 'default',
+    nav_position: 'top',
+    nav_color: '#667eea',
+    nav_hover_color: '#5a6fd8',
+    
+    // Advanced button customization
+    button_style: 'default',
+    button_size: 'medium',
+    button_shadow: 'true',
+    button_animation: 'true',
+    
+    // Page-specific settings
+    dashboard_layout: 'grid',
+    dashboard_theme: 'default',
+    login_background_url: '',
+    login_style: 'default',
+    
+    // Custom text overrides
+    custom_text_labels: '{}',
+    page_titles: '{}',
+    
+    // Advanced customization
+    custom_css: '',
+    theme_mode: 'light',
+    border_radius: '8px',
+    spacing_unit: '16px',
+    
+    // Accessibility settings
+    high_contrast: 'false',
+    large_text: 'false',
+    reduced_motion: 'false',
+    
+    // Advanced header settings
+    header_height: '60px',
+    header_shadow: 'true',
+    header_sticky: 'true',
+    
+    // Card and component styling
+    card_shadow: 'true',
+    card_border: 'true',
+    card_hover_effect: 'true'
   });
   // Super admin settings (from AdminSettings.js)
   const [adminSettings, setAdminSettings] = useState({
@@ -40,6 +97,9 @@ const CloudUICustomization = () => {
   const [uploadingButtonImage, setUploadingButtonImage] = useState('');
   const [customButtonImages, setCustomButtonImages] = useState({});
   const [selectedButtonType, setSelectedButtonType] = useState('');
+  const [footerLinks, setFooterLinks] = useState({});
+  const [customTextLabels, setCustomTextLabels] = useState({});
+  const [pageTitles, setPageTitles] = useState({});
 
   useEffect(() => {
     if (!user?.is_admin && !user?.is_administrator) {
@@ -68,6 +128,33 @@ const CloudUICustomization = () => {
       } catch (e) {
         console.error('Error parsing custom button images:', e);
         setCustomButtonImages({});
+      }
+      
+      // Parse footer links
+      try {
+        const footerLinksObj = JSON.parse(loadedSettings.footer_links || '{}');
+        setFooterLinks(footerLinksObj);
+      } catch (e) {
+        console.error('Error parsing footer links:', e);
+        setFooterLinks({});
+      }
+      
+      // Parse custom text labels
+      try {
+        const textLabels = JSON.parse(loadedSettings.custom_text_labels || '{}');
+        setCustomTextLabels(textLabels);
+      } catch (e) {
+        console.error('Error parsing custom text labels:', e);
+        setCustomTextLabels({});
+      }
+      
+      // Parse page titles
+      try {
+        const pageTitlesObj = JSON.parse(loadedSettings.page_titles || '{}');
+        setPageTitles(pageTitlesObj);
+      } catch (e) {
+        console.error('Error parsing page titles:', e);
+        setPageTitles({});
       }
       
       // Sync with admin settings for super admins
@@ -245,6 +332,7 @@ const CloudUICustomization = () => {
   const resetToDefaults = () => {
     if (confirm('Are you sure you want to reset all settings to defaults? This will not delete uploaded files.')) {
       const defaultSettings = {
+        // Original settings
         app_name: 'LXCloud',
         primary_color: '#667eea',
         secondary_color: '#f093fb',
@@ -254,11 +342,70 @@ const CloudUICustomization = () => {
         logo_url: '',
         favicon_url: '',
         background_image_url: '',
-        custom_button_images: '{}'
+        custom_button_images: '{}',
+        
+        // Footer customization
+        footer_enabled: 'true',
+        footer_text: 'Powered by LXCloud',
+        footer_color: '#f8f9fa',
+        footer_text_color: '#6c757d',
+        footer_links: '{}',
+        
+        // Typography settings
+        font_family: 'system-ui, -apple-system, sans-serif',
+        font_size_base: '16px',
+        font_size_heading: '24px',
+        line_height: '1.5',
+        
+        // Navigation customization
+        nav_style: 'default',
+        nav_position: 'top',
+        nav_color: '#667eea',
+        nav_hover_color: '#5a6fd8',
+        
+        // Advanced button customization
+        button_style: 'default',
+        button_size: 'medium',
+        button_shadow: 'true',
+        button_animation: 'true',
+        
+        // Page-specific settings
+        dashboard_layout: 'grid',
+        dashboard_theme: 'default',
+        login_background_url: '',
+        login_style: 'default',
+        
+        // Custom text overrides
+        custom_text_labels: '{}',
+        page_titles: '{}',
+        
+        // Advanced customization
+        custom_css: '',
+        theme_mode: 'light',
+        border_radius: '8px',
+        spacing_unit: '16px',
+        
+        // Accessibility settings
+        high_contrast: 'false',
+        large_text: 'false',
+        reduced_motion: 'false',
+        
+        // Advanced header settings
+        header_height: '60px',
+        header_shadow: 'true',
+        header_sticky: 'true',
+        
+        // Card and component styling
+        card_shadow: 'true',
+        card_border: 'true',
+        card_hover_effect: 'true'
       };
       
       setUiSettings(defaultSettings);
       setCustomButtonImages({});
+      setFooterLinks({});
+      setCustomTextLabels({});
+      setPageTitles({});
       
       if (user?.is_admin) {
         setAdminSettings({
@@ -885,6 +1032,437 @@ const CloudUICustomization = () => {
           </div>
         </div>
       )}
+
+      {/* Footer Customization */}
+      <div className="card">
+        <h2>Footer Customization</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Customize the footer appearance and content that appears at the bottom of all pages.
+        </p>
+        
+        <div className="form-group">
+          <label className="form-label">
+            <input
+              type="checkbox"
+              checked={uiSettings.footer_enabled === 'true'}
+              onChange={(e) => handleInputChange('footer_enabled', e.target.checked ? 'true' : 'false')}
+              style={{ marginRight: '10px' }}
+            />
+            Enable Footer
+          </label>
+          <small style={{ color: '#666' }}>
+            Show or hide the footer on all pages
+          </small>
+        </div>
+
+        {uiSettings.footer_enabled === 'true' && (
+          <>
+            <div className="form-group">
+              <label className="form-label">Footer Text</label>
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.footer_text}
+                onChange={(e) => handleInputChange('footer_text', e.target.value)}
+                placeholder="Powered by LXCloud"
+              />
+              <small style={{ color: '#666' }}>
+                Text displayed in the center of the footer
+              </small>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Footer Background Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.footer_color}
+                    onChange={(e) => handleInputChange('footer_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.footer_color}
+                    onChange={(e) => handleInputChange('footer_color', e.target.value)}
+                    placeholder="#f8f9fa"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Footer Text Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.footer_text_color}
+                    onChange={(e) => handleInputChange('footer_text_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.footer_text_color}
+                    onChange={(e) => handleInputChange('footer_text_color', e.target.value)}
+                    placeholder="#6c757d"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <h4>Footer Preview</h4>
+              <div style={{ 
+                background: uiSettings.footer_color, 
+                color: uiSettings.footer_text_color, 
+                padding: '15px', 
+                borderRadius: '8px',
+                textAlign: 'center',
+                border: '1px solid #ddd'
+              }}>
+                {uiSettings.footer_text}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Typography Settings */}
+      <div className="card">
+        <h2>Typography Settings</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Customize fonts, sizes, and text styling across the application.
+        </p>
+        
+        <div className="form-group">
+          <label className="form-label">Font Family</label>
+          <select
+            className="form-input"
+            value={uiSettings.font_family}
+            onChange={(e) => handleInputChange('font_family', e.target.value)}
+          >
+            <option value="system-ui, -apple-system, sans-serif">System Default</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Helvetica, sans-serif">Helvetica</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Open Sans', sans-serif">Open Sans</option>
+            <option value="'Lato', sans-serif">Lato</option>
+          </select>
+          <small style={{ color: '#666' }}>
+            Choose the primary font family for the application
+          </small>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <div className="form-group">
+            <label className="form-label">Base Font Size</label>
+            <input
+              type="text"
+              className="form-input"
+              value={uiSettings.font_size_base}
+              onChange={(e) => handleInputChange('font_size_base', e.target.value)}
+              placeholder="16px"
+            />
+            <small style={{ color: '#666' }}>
+              Base text size (e.g., 16px, 1rem)
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Heading Font Size</label>
+            <input
+              type="text"
+              className="form-input"
+              value={uiSettings.font_size_heading}
+              onChange={(e) => handleInputChange('font_size_heading', e.target.value)}
+              placeholder="24px"
+            />
+            <small style={{ color: '#666' }}>
+              Main heading size (e.g., 24px, 1.5rem)
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Line Height</label>
+            <input
+              type="text"
+              className="form-input"
+              value={uiSettings.line_height}
+              onChange={(e) => handleInputChange('line_height', e.target.value)}
+              placeholder="1.5"
+            />
+            <small style={{ color: '#666' }}>
+              Text line spacing (e.g., 1.5, 1.6)
+            </small>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <h4>Typography Preview</h4>
+          <div style={{ 
+            fontFamily: uiSettings.font_family,
+            fontSize: uiSettings.font_size_base,
+            lineHeight: uiSettings.line_height,
+            padding: '20px',
+            border: '1px solid #ddd',
+            borderRadius: '8px'
+          }}>
+            <h1 style={{ fontSize: uiSettings.font_size_heading, margin: '0 0 10px 0' }}>
+              Heading Example
+            </h1>
+            <p style={{ margin: '0' }}>
+              This is a sample paragraph showing how your typography settings will appear. 
+              The font family, size, and line height are applied to demonstrate the visual impact.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Button Customization */}
+      <div className="card">
+        <h2>Advanced Button Styling</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Configure advanced button appearance and behavior.
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <div className="form-group">
+            <label className="form-label">Button Style</label>
+            <select
+              className="form-input"
+              value={uiSettings.button_style}
+              onChange={(e) => handleInputChange('button_style', e.target.value)}
+            >
+              <option value="default">Default</option>
+              <option value="rounded">Rounded</option>
+              <option value="square">Square</option>
+              <option value="outline">Outline</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Button Size</label>
+            <select
+              className="form-input"
+              value={uiSettings.button_size}
+              onChange={(e) => handleInputChange('button_size', e.target.value)}
+            >
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={uiSettings.button_shadow === 'true'}
+                onChange={(e) => handleInputChange('button_shadow', e.target.checked ? 'true' : 'false')}
+                style={{ marginRight: '10px' }}
+              />
+              Button Shadow
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={uiSettings.button_animation === 'true'}
+                onChange={(e) => handleInputChange('button_animation', e.target.checked ? 'true' : 'false')}
+                style={{ marginRight: '10px' }}
+              />
+              Button Animations
+            </label>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <h4>Advanced Button Preview</h4>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {['primary', 'secondary', 'success', 'danger'].map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={`button button-${type === 'primary' ? '' : type}`}
+                style={{
+                  borderRadius: uiSettings.button_style === 'rounded' ? '25px' : 
+                              uiSettings.button_style === 'square' ? '0' : '8px',
+                  padding: uiSettings.button_size === 'small' ? '8px 16px' :
+                          uiSettings.button_size === 'large' ? '16px 32px' : '12px 24px',
+                  fontSize: uiSettings.button_size === 'small' ? '14px' :
+                          uiSettings.button_size === 'large' ? '18px' : '16px',
+                  boxShadow: uiSettings.button_shadow === 'true' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                  transition: uiSettings.button_animation === 'true' ? 'all 0.2s ease' : 'none',
+                  border: uiSettings.button_style === 'outline' ? '2px solid currentColor' : undefined,
+                  background: uiSettings.button_style === 'outline' ? 'transparent' : undefined
+                }}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Theme and Layout Settings */}
+      <div className="card">
+        <h2>Theme & Layout Settings</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Configure overall theme mode and layout preferences.
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+          <div className="form-group">
+            <label className="form-label">Theme Mode</label>
+            <select
+              className="form-input"
+              value={uiSettings.theme_mode}
+              onChange={(e) => handleInputChange('theme_mode', e.target.value)}
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="auto">Auto (System)</option>
+            </select>
+            <small style={{ color: '#666' }}>
+              Choose between light, dark, or automatic theme
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Border Radius</label>
+            <input
+              type="text"
+              className="form-input"
+              value={uiSettings.border_radius}
+              onChange={(e) => handleInputChange('border_radius', e.target.value)}
+              placeholder="8px"
+            />
+            <small style={{ color: '#666' }}>
+              Global border radius for cards and components
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Spacing Unit</label>
+            <input
+              type="text"
+              className="form-input"
+              value={uiSettings.spacing_unit}
+              onChange={(e) => handleInputChange('spacing_unit', e.target.value)}
+              placeholder="16px"
+            />
+            <small style={{ color: '#666' }}>
+              Base spacing unit for consistent margins and padding
+            </small>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Dashboard Layout</label>
+          <select
+            className="form-input"
+            value={uiSettings.dashboard_layout}
+            onChange={(e) => handleInputChange('dashboard_layout', e.target.value)}
+          >
+            <option value="grid">Grid View</option>
+            <option value="list">List View</option>
+            <option value="cards">Card View</option>
+          </select>
+          <small style={{ color: '#666' }}>
+            Default layout for the dashboard page
+          </small>
+        </div>
+      </div>
+
+      {/* Accessibility Settings */}
+      <div className="card">
+        <h2>Accessibility Settings</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Configure accessibility features to improve usability for all users.
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={uiSettings.high_contrast === 'true'}
+                onChange={(e) => handleInputChange('high_contrast', e.target.checked ? 'true' : 'false')}
+                style={{ marginRight: '10px' }}
+              />
+              High Contrast Mode
+            </label>
+            <small style={{ color: '#666' }}>
+              Increase contrast for better visibility
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={uiSettings.large_text === 'true'}
+                onChange={(e) => handleInputChange('large_text', e.target.checked ? 'true' : 'false')}
+                style={{ marginRight: '10px' }}
+              />
+              Large Text
+            </label>
+            <small style={{ color: '#666' }}>
+              Increase font sizes for better readability
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={uiSettings.reduced_motion === 'true'}
+                onChange={(e) => handleInputChange('reduced_motion', e.target.checked ? 'true' : 'false')}
+                style={{ marginRight: '10px' }}
+              />
+              Reduced Motion
+            </label>
+            <small style={{ color: '#666' }}>
+              Minimize animations and transitions
+            </small>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom CSS Injection */}
+      <div className="card">
+        <h2>Custom CSS (Advanced)</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Inject custom CSS for advanced styling. Use with caution as incorrect CSS can break the interface.
+        </p>
+        
+        <div className="form-group">
+          <label className="form-label">Custom CSS Code</label>
+          <textarea
+            className="form-input"
+            value={uiSettings.custom_css}
+            onChange={(e) => handleInputChange('custom_css', e.target.value)}
+            placeholder="/* Add your custom CSS here */
+.custom-class {
+  /* Your styles */
+}"
+            rows="10"
+            style={{ fontFamily: 'monospace', fontSize: '14px' }}
+          />
+          <small style={{ color: '#666' }}>
+            Advanced users can add custom CSS to further customize the appearance.
+            Changes take effect after saving settings.
+          </small>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
         <button
