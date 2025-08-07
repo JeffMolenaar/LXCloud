@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 
 const ScreenManagement = () => {
@@ -9,11 +10,14 @@ const ScreenManagement = () => {
   const [selectedScreens, setSelectedScreens] = useState(new Set());
   const [editingScreen, setEditingScreen] = useState(null);
   const [editName, setEditName] = useState('');
+  const { applyPageCSS } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadScreens();
-  }, []);
+    // Apply page-specific CSS when component mounts
+    applyPageCSS('manage-screens');
+  }, [applyPageCSS]);
 
   const loadScreens = async () => {
     try {

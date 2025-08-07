@@ -67,6 +67,10 @@ const CloudUICustomization = () => {
     border_radius: '8px',
     spacing_unit: '16px',
     
+    // Per-page custom CSS
+    dashboard_custom_css: '',
+    manage_screens_custom_css: '',
+    
     // Accessibility settings
     high_contrast: 'false',
     large_text: 'false',
@@ -437,6 +441,10 @@ const CloudUICustomization = () => {
         theme_mode: 'light',
         border_radius: '8px',
         spacing_unit: '16px',
+        
+        // Per-page custom CSS
+        dashboard_custom_css: '',
+        manage_screens_custom_css: '',
         
         // Accessibility settings
         high_contrast: 'false',
@@ -1040,8 +1048,121 @@ const CloudUICustomization = () => {
 
         {/* Pages & Content Tab */}
         <TabPanel label="📄 Pages & Content">
+          
+          {/* Dashboard Settings Subcategory */}
           <div className="card">
-            <h2>Button Customization</h2>
+            <h2>🏠 Dashboard Settings</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Customize the Dashboard page layout, theme, and styling.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Dashboard Layout</label>
+                <select
+                  className="form-input"
+                  value={uiSettings.dashboard_layout}
+                  onChange={(e) => handleInputChange('dashboard_layout', e.target.value)}
+                >
+                  <option value="grid">Grid View</option>
+                  <option value="list">List View</option>
+                  <option value="cards">Card View</option>
+                </select>
+                <small style={{ color: '#666' }}>
+                  Default layout for the dashboard page
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Dashboard Theme</label>
+                <select
+                  className="form-input"
+                  value={uiSettings.dashboard_theme}
+                  onChange={(e) => handleInputChange('dashboard_theme', e.target.value)}
+                >
+                  <option value="default">Default</option>
+                  <option value="compact">Compact</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+                <small style={{ color: '#666' }}>
+                  Visual theme for the dashboard components
+                </small>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '30px' }}>
+              <label className="form-label">Dashboard Custom CSS</label>
+              <textarea
+                className="form-input"
+                value={uiSettings.dashboard_custom_css}
+                onChange={(e) => handleInputChange('dashboard_custom_css', e.target.value)}
+                placeholder="/* Custom CSS for Dashboard page only */
+.dashboard-container {
+  /* Your dashboard-specific styles */
+}
+
+.screen-card {
+  /* Custom screen card styling */
+}
+
+.map-container {
+  /* Custom map styling */
+}"
+                rows="8"
+                style={{ fontFamily: 'monospace', fontSize: '14px' }}
+              />
+              <small style={{ color: '#666' }}>
+                Add custom CSS that will only be applied to the Dashboard page. This CSS is injected specifically when viewing the Dashboard.
+              </small>
+            </div>
+          </div>
+
+          {/* Manage Screens Settings Subcategory */}
+          <div className="card">
+            <h2>📺 Manage Screens Settings</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Customize the Manage Screens page appearance and functionality.
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Manage Screens Custom CSS</label>
+              <textarea
+                className="form-input"
+                value={uiSettings.manage_screens_custom_css}
+                onChange={(e) => handleInputChange('manage_screens_custom_css', e.target.value)}
+                placeholder="/* Custom CSS for Manage Screens page only */
+.screen-management-container {
+  /* Your screen management styles */
+}
+
+.screens-table {
+  /* Custom table styling */
+}
+
+.screen-actions {
+  /* Custom action button styling */
+}
+
+.screen-list-item {
+  /* Custom list item styling */
+}"
+                rows="8"
+                style={{ fontFamily: 'monospace', fontSize: '14px' }}
+              />
+              <small style={{ color: '#666' }}>
+                Add custom CSS that will only be applied to the Manage Screens page. This allows you to customize the screen list, table, and action buttons specifically.
+              </small>
+            </div>
+          </div>
+
+          {/* General Page Settings Subcategory */}
+          <div className="card">
+            <h2>⚙️ General Page Settings</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Configure general settings that apply to all pages including buttons, typography, and theme.
+            </p>
+            
+            <h3>Button Customization</h3>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
               <div className="form-group">
@@ -1370,96 +1491,78 @@ const CloudUICustomization = () => {
           </div>
 
           {/* Background & Theme */}
-          <div className="card">
-            <h2>Background & Theme</h2>
-            
-            <div className="form-group">
-              <label className="form-label">Background Image</label>
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'background')}
-                    disabled={uploadingBackground}
-                    style={{ marginBottom: '10px' }}
-                  />
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={uiSettings.background_image_url}
-                    onChange={(e) => handleInputChange('background_image_url', e.target.value)}
-                    placeholder="Background image URL"
-                    disabled={uploadingBackground}
-                  />
-                  <small style={{ color: '#666' }}>
-                    Upload a background image or enter a URL. Will be used as a subtle background pattern.
-                  </small>
-                </div>
-                {uiSettings.background_image_url && (
-                  <div style={{ width: '60px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                    <img 
-                      src={uiSettings.background_image_url} 
-                      alt="Background preview" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                    <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
-                  </div>
-                )}
-              </div>
-              {uploadingBackground && <div style={{ color: '#666', fontSize: '14px' }}>Uploading background...</div>}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-              <div className="form-group">
-                <label className="form-label">Theme Mode</label>
-                <select
-                  className="form-input"
-                  value={uiSettings.theme_mode}
-                  onChange={(e) => handleInputChange('theme_mode', e.target.value)}
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="auto">Auto (System)</option>
-                </select>
-                <small style={{ color: '#666' }}>
-                  Choose between light, dark, or automatic theme
-                </small>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Border Radius</label>
+          <h3>Background & Theme</h3>
+          
+          <div className="form-group">
+            <label className="form-label">Background Image</label>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e.target.files[0], 'background')}
+                  disabled={uploadingBackground}
+                  style={{ marginBottom: '10px' }}
+                />
                 <input
                   type="text"
                   className="form-input"
-                  value={uiSettings.border_radius}
-                  onChange={(e) => handleInputChange('border_radius', e.target.value)}
-                  placeholder="8px"
+                  value={uiSettings.background_image_url}
+                  onChange={(e) => handleInputChange('background_image_url', e.target.value)}
+                  placeholder="Background image URL"
+                  disabled={uploadingBackground}
                 />
                 <small style={{ color: '#666' }}>
-                  Global border radius for cards and components
+                  Upload a background image or enter a URL. Will be used as a subtle background pattern.
                 </small>
               </div>
+              {uiSettings.background_image_url && (
+                <div style={{ width: '60px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                  <img 
+                    src={uiSettings.background_image_url} 
+                    alt="Background preview" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                </div>
+              )}
+            </div>
+            {uploadingBackground && <div style={{ color: '#666', fontSize: '14px' }}>Uploading background...</div>}
+          </div>
 
-              <div className="form-group">
-                <label className="form-label">Dashboard Layout</label>
-                <select
-                  className="form-input"
-                  value={uiSettings.dashboard_layout}
-                  onChange={(e) => handleInputChange('dashboard_layout', e.target.value)}
-                >
-                  <option value="grid">Grid View</option>
-                  <option value="list">List View</option>
-                  <option value="cards">Card View</option>
-                </select>
-                <small style={{ color: '#666' }}>
-                  Default layout for the dashboard page
-                </small>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+            <div className="form-group">
+              <label className="form-label">Theme Mode</label>
+              <select
+                className="form-input"
+                value={uiSettings.theme_mode}
+                onChange={(e) => handleInputChange('theme_mode', e.target.value)}
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="auto">Auto (System)</option>
+              </select>
+              <small style={{ color: '#666' }}>
+                Choose between light, dark, or automatic theme
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Border Radius</label>
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.border_radius}
+                onChange={(e) => handleInputChange('border_radius', e.target.value)}
+                placeholder="8px"
+              />
+              <small style={{ color: '#666' }}>
+                Global border radius for cards and components
+              </small>
             </div>
           </div>
         </TabPanel>

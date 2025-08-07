@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import { useSettings } from '../context/SettingsContext';
+import { useTheme } from '../context/ThemeContext';
 import { useScreens } from '../hooks/useScreens';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { APP_CONFIG } from '../utils/constants';
@@ -24,7 +25,13 @@ const Dashboard = () => {
   });
   
   const { settings } = useSettings();
+  const { applyPageCSS } = useTheme();
   const navigate = useNavigate();
+  
+  // Apply page-specific CSS when component mounts
+  React.useEffect(() => {
+    applyPageCSS('dashboard');
+  }, [applyPageCSS]);
   
   // Use custom hooks for screen management
   const {
