@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTheme } from '../context/ThemeContext';
+import { Tabs, TabPanel } from '../components/Tabs';
 import api from '../services/api';
 
 const CloudUICustomization = () => {
@@ -510,1382 +511,282 @@ const CloudUICustomization = () => {
         </div>
       )}
 
-      <div className="card">
-        <h2>General Settings</h2>
-        
-        <div className="form-group">
-          <label className="form-label">Application Name</label>
-          <input
-            type="text"
-            className="form-input"
-            value={uiSettings.app_name}
-            onChange={(e) => handleInputChange('app_name', e.target.value)}
-            placeholder="LXCloud"
-          />
-          <small style={{ color: '#666' }}>
-            This name will appear in the header and page title
-          </small>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-          <div className="form-group">
-            <label className="form-label">Primary Color</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={uiSettings.primary_color}
-                onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-              />
+      <Tabs defaultTab={0}>
+        {/* Header & Branding Tab */}
+        <TabPanel label="🏠 Header & Branding">
+          <div className="card">
+            <h2>General Settings</h2>
+            
+            <div className="form-group">
+              <label className="form-label">Application Name</label>
               <input
                 type="text"
                 className="form-input"
-                value={uiSettings.primary_color}
-                onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                placeholder="#667eea"
-                style={{ flex: 1 }}
+                value={uiSettings.app_name}
+                onChange={(e) => handleInputChange('app_name', e.target.value)}
+                placeholder="LXCloud"
               />
+              <small style={{ color: '#666' }}>
+                This name will appear in the header and page title
+              </small>
             </div>
-          </div>
 
-          <div className="form-group">
-            <label className="form-label">Secondary Color</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={uiSettings.secondary_color}
-                onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.secondary_color}
-                onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                placeholder="#f093fb"
-                style={{ flex: 1 }}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Header Color</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={uiSettings.header_color}
-                onChange={(e) => handleInputChange('header_color', e.target.value)}
-                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.header_color}
-                onChange={(e) => handleInputChange('header_color', e.target.value)}
-                placeholder="#667eea"
-                style={{ flex: 1 }}
-              />
-            </div>
-            <small style={{ color: '#666' }}>
-              This color will be applied to the header background
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Header Text Color</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={uiSettings.header_text_color}
-                onChange={(e) => handleInputChange('header_text_color', e.target.value)}
-                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.header_text_color}
-                onChange={(e) => handleInputChange('header_text_color', e.target.value)}
-                placeholder="#ffffff"
-                style={{ flex: 1 }}
-              />
-            </div>
-            <small style={{ color: '#666' }}>
-              This color will be applied to the header menu text and logo
-            </small>
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2>Button Customization</h2>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-          <div className="form-group">
-            <label className="form-label">Button Color</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={uiSettings.button_color}
-                onChange={(e) => handleInputChange('button_color', e.target.value)}
-                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.button_color}
-                onChange={(e) => handleInputChange('button_color', e.target.value)}
-                placeholder="#667eea"
-                style={{ flex: 1 }}
-              />
-            </div>
-            <small style={{ color: '#666' }}>
-              Default color for all buttons
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Button Hover Color</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={uiSettings.button_hover_color}
-                onChange={(e) => handleInputChange('button_hover_color', e.target.value)}
-                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.button_hover_color}
-                onChange={(e) => handleInputChange('button_hover_color', e.target.value)}
-                placeholder="#5a6fd8"
-                style={{ flex: 1 }}
-              />
-            </div>
-            <small style={{ color: '#666' }}>
-              Color when hovering over buttons
-            </small>
-          </div>
-        </div>
-
-        <div className="form-group" style={{ marginTop: '30px' }}>
-          <label className="form-label">Custom Button Images</label>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Upload custom images to replace specific button types. The image will replace the button background.
-          </p>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            {['primary', 'secondary', 'danger', 'success', 'warning'].map((buttonType) => (
-              <div key={buttonType} className="form-group">
-                <label className="form-label" style={{ textTransform: 'capitalize' }}>
-                  {buttonType} Button Image
-                </label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload(e.target.files[0], `button_${buttonType}`)}
-                      disabled={uploadingButtonImage === `button_${buttonType}`}
-                      style={{ marginBottom: '10px' }}
-                    />
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={customButtonImages[buttonType] || ''}
-                      onChange={(e) => {
-                        const updatedImages = { ...customButtonImages, [buttonType]: e.target.value };
-                        setCustomButtonImages(updatedImages);
-                        handleInputChange('custom_button_images', JSON.stringify(updatedImages));
-                      }}
-                      placeholder={`${buttonType} button image URL`}
-                      disabled={uploadingButtonImage === `button_${buttonType}`}
-                    />
-                    <small style={{ color: '#666' }}>
-                      Upload an image or enter URL for {buttonType} buttons
-                    </small>
-                  </div>
-                  {customButtonImages[buttonType] && (
-                    <div style={{ 
-                      width: '80px', 
-                      height: '40px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '4px', 
-                      overflow: 'hidden',
-                      backgroundImage: `url(${customButtonImages[buttonType]})`,
-                      backgroundSize: 'contain',
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'center'
-                    }}>
-                      <span style={{ 
-                        fontSize: '12px', 
-                        color: 'transparent',
-                        textShadow: '0 0 3px rgba(0,0,0,0.5)'
-                      }}>
-                        Preview
-                      </span>
-                    </div>
-                  )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Primary Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.primary_color}
+                    onChange={(e) => handleInputChange('primary_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.primary_color}
+                    onChange={(e) => handleInputChange('primary_color', e.target.value)}
+                    placeholder="#667eea"
+                    style={{ flex: 1 }}
+                  />
                 </div>
-                {uploadingButtonImage === `button_${buttonType}` && (
-                  <div style={{ color: '#666', fontSize: '14px' }}>
-                    Uploading {buttonType} button image...
-                  </div>
-                )}
-                {customButtonImages[buttonType] && (
-                  <div style={{ marginTop: '10px' }}>
-                    <button
-                      type="button"
-                      className={`button button-${buttonType === 'primary' ? '' : 'secondary'}`}
-                      style={{ 
-                        background: customButtonImages[buttonType] ? 
-                          `url(${customButtonImages[buttonType]}) center/contain no-repeat` : 
-                          undefined,
-                        color: customButtonImages[buttonType] ? 'transparent' : undefined,
-                        minHeight: '40px'
-                      }}
-                    >
-                      {buttonType.charAt(0).toUpperCase() + buttonType.slice(1)} Button Preview
-                    </button>
-                    <button
-                      type="button"
-                      className="button button-danger button-small"
-                      onClick={() => {
-                        const updatedImages = { ...customButtonImages };
-                        delete updatedImages[buttonType];
-                        setCustomButtonImages(updatedImages);
-                        handleInputChange('custom_button_images', JSON.stringify(updatedImages));
-                      }}
-                      style={{ marginLeft: '10px' }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Screen Management Button Icons */}
-      <div className="card">
-        <h2>Screen Management Button Icons</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Upload custom icons to replace the default button icons in the Manage Screens page. 
-          These icons will appear on each screen's action buttons.
-        </p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
-          {[
-            { key: 'screen_view_data_icon', label: 'View Data Icon', description: 'Icon for the view data button (📊)', defaultIcon: '📊' },
-            { key: 'screen_edit_icon', label: 'Edit Name Icon', description: 'Icon for the edit name button (✏️)', defaultIcon: '✏️' },
-            { key: 'screen_unbind_icon', label: 'Unbind Screen Icon', description: 'Icon for the unbind screen button (🔗❌)', defaultIcon: '🔗❌' }
-          ].map((iconConfig) => (
-            <div key={iconConfig.key} className="form-group">
-              <label className="form-label">{iconConfig.label}</label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div className="form-group">
+                <label className="form-label">Header Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.header_color}
+                    onChange={(e) => handleInputChange('header_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.header_color}
+                    onChange={(e) => handleInputChange('header_color', e.target.value)}
+                    placeholder="#667eea"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <small style={{ color: '#666' }}>
+                  This color will be applied to the header background
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Header Text Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.header_text_color}
+                    onChange={(e) => handleInputChange('header_text_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.header_text_color}
+                    onChange={(e) => handleInputChange('header_text_color', e.target.value)}
+                    placeholder="#ffffff"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <small style={{ color: '#666' }}>
+                  This color will be applied to the header menu text and logo
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>Logo & Branding</h2>
+            
+            <div className="form-group">
+              <label className="form-label">Application Logo</label>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleFileUpload(e.target.files[0], iconConfig.key)}
-                    disabled={uploadingButtonImage === iconConfig.key}
+                    onChange={(e) => handleFileUpload(e.target.files[0], 'logo')}
+                    disabled={uploadingLogo}
                     style={{ marginBottom: '10px' }}
                   />
                   <input
                     type="text"
                     className="form-input"
-                    value={uiSettings[iconConfig.key] || ''}
-                    onChange={(e) => handleInputChange(iconConfig.key, e.target.value)}
-                    placeholder={`${iconConfig.label} URL`}
-                    disabled={uploadingButtonImage === iconConfig.key}
+                    value={uiSettings.logo_url}
+                    onChange={(e) => handleInputChange('logo_url', e.target.value)}
+                    placeholder="Logo URL"
+                    disabled={uploadingLogo}
                   />
                   <small style={{ color: '#666' }}>
-                    {iconConfig.description}. Upload an image or enter URL.
+                    Upload a logo or enter a URL. Recommended size: 200x60px
                   </small>
                 </div>
-                {uiSettings[iconConfig.key] ? (
-                  <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    border: '1px solid #ddd', 
-                    borderRadius: '4px', 
-                    overflow: 'hidden',
-                    backgroundImage: `url(${uiSettings[iconConfig.key]})`,
-                    backgroundSize: 'contain',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'center'
-                  }}>
-                    <span style={{ 
-                      fontSize: '10px', 
-                      color: 'transparent',
-                      textShadow: '0 0 3px rgba(0,0,0,0.5)'
-                    }}>
-                      Preview
-                    </span>
-                  </div>
-                ) : (
-                  <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    border: '1px solid #ddd', 
-                    borderRadius: '4px',
-                    fontSize: '16px'
-                  }}>
-                    {iconConfig.defaultIcon}
+                {uiSettings.logo_url && (
+                  <div style={{ width: '100px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                    <img 
+                      src={uiSettings.logo_url} 
+                      alt="Logo preview" 
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <span style={{ display: 'none', fontSize: '12px', color: '#666' }}>Invalid</span>
                   </div>
                 )}
               </div>
-              {uploadingButtonImage === iconConfig.key && (
-                <div style={{ color: '#666', fontSize: '14px' }}>
-                  Uploading {iconConfig.label.toLowerCase()}...
-                </div>
-              )}
-              {uiSettings[iconConfig.key] && (
-                <div style={{ marginTop: '10px' }}>
-                  <button
-                    type="button"
-                    className="button button-small"
-                    style={{ 
-                      background: uiSettings[iconConfig.key] ? 
-                        `url(${uiSettings[iconConfig.key]}) center/contain no-repeat` : 
-                        undefined,
-                      color: uiSettings[iconConfig.key] ? 'transparent' : undefined,
-                      minHeight: '32px',
-                      minWidth: '80px'
-                    }}
-                  >
-                    {iconConfig.label} Preview
-                  </button>
-                  <button
-                    type="button"
-                    className="button button-danger button-small"
-                    onClick={() => handleInputChange(iconConfig.key, '')}
-                    style={{ marginLeft: '10px' }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
+              {uploadingLogo && <div style={{ color: '#666', fontSize: '14px' }}>Uploading logo...</div>}
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="card">
-        <h2>Color Preview</h2>
-        <div style={{ display: 'grid', gap: '20px' }}>
-          <div>
-            <h4>Header Preview</h4>
+            <div className="form-group">
+              <label className="form-label">Favicon</label>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e.target.files[0], 'favicon')}
+                    disabled={uploadingFavicon}
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.favicon_url}
+                    onChange={(e) => handleInputChange('favicon_url', e.target.value)}
+                    placeholder="Favicon URL"
+                    disabled={uploadingFavicon}
+                  />
+                  <small style={{ color: '#666' }}>
+                    Upload a favicon or enter a URL. Recommended size: 32x32px or 16x16px
+                  </small>
+                </div>
+                {uiSettings.favicon_url && (
+                  <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                    <img 
+                      src={uiSettings.favicon_url} 
+                      alt="Favicon preview" 
+                      style={{ width: '16px', height: '16px', objectFit: 'contain' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                  </div>
+                )}
+              </div>
+              {uploadingFavicon && <div style={{ color: '#666', fontSize: '14px' }}>Uploading favicon...</div>}
+            </div>
+          </div>
+
+          {/* Header Preview */}
+          <div className="card">
+            <h2>Header Preview</h2>
             <div style={{ 
               background: uiSettings.header_color || '#667eea', 
               color: uiSettings.header_text_color || '#ffffff', 
               padding: '15px', 
-              borderRadius: '8px' 
+              borderRadius: '8px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                {uiSettings.app_name || 'LXCloud'}
-              </span>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                {uiSettings.logo_url ? (
+                  <img 
+                    src={uiSettings.logo_url} 
+                    alt="Logo" 
+                    style={{ height: '30px', maxWidth: '150px', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                    {uiSettings.app_name || 'LXCloud'}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '15px' }}>
                 <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Dashboard</span>
                 <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Manage Screens</span>
                 <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Admin Panel</span>
               </div>
             </div>
           </div>
-          
-          <div>
-            <h4>Button Preview</h4>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button 
-                type="button"
-                className="button"
-                style={{ 
-                  background: uiSettings.button_color || '#667eea',
-                  borderColor: uiSettings.button_color || '#667eea'
-                }}
-              >
-                Primary Button
-              </button>
-              <button 
-                type="button"
-                className="button button-secondary"
-              >
-                Secondary Button
-              </button>
-              <button 
-                type="button"
-                className="button button-danger"
-              >
-                Danger Button
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="card">
-        <h2>Logo & Branding</h2>
-        
-        <div className="form-group">
-          <label className="form-label">Application Logo</label>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e.target.files[0], 'logo')}
-                disabled={uploadingLogo}
-                style={{ marginBottom: '10px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.logo_url}
-                onChange={(e) => handleInputChange('logo_url', e.target.value)}
-                placeholder="Logo URL"
-                disabled={uploadingLogo}
-              />
-              <small style={{ color: '#666' }}>
-                Upload a logo or enter a URL. Recommended size: 200x60px
-              </small>
-            </div>
-            {uiSettings.logo_url && (
-              <div style={{ width: '100px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                <img 
-                  src={uiSettings.logo_url} 
-                  alt="Logo preview" 
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }}
-                />
-                <span style={{ display: 'none', fontSize: '12px', color: '#666' }}>Invalid</span>
-              </div>
-            )}
-          </div>
-          {uploadingLogo && <div style={{ color: '#666', fontSize: '14px' }}>Uploading logo...</div>}
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Favicon</label>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e.target.files[0], 'favicon')}
-                disabled={uploadingFavicon}
-                style={{ marginBottom: '10px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.favicon_url}
-                onChange={(e) => handleInputChange('favicon_url', e.target.value)}
-                placeholder="Favicon URL"
-                disabled={uploadingFavicon}
-              />
-              <small style={{ color: '#666' }}>
-                Upload a favicon or enter a URL. Recommended size: 32x32px or 16x16px
-              </small>
-            </div>
-            {uiSettings.favicon_url && (
-              <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                <img 
-                  src={uiSettings.favicon_url} 
-                  alt="Favicon preview" 
-                  style={{ width: '16px', height: '16px', objectFit: 'contain' }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }}
-                />
-                <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
-              </div>
-            )}
-          </div>
-          {uploadingFavicon && <div style={{ color: '#666', fontSize: '14px' }}>Uploading favicon...</div>}
-        </div>
-      </div>
-
-      <div className="card">
-        <h2>Background & Theme</h2>
-        
-        <div className="form-group">
-          <label className="form-label">Background Image</label>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e.target.files[0], 'background')}
-                disabled={uploadingBackground}
-                style={{ marginBottom: '10px' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.background_image_url}
-                onChange={(e) => handleInputChange('background_image_url', e.target.value)}
-                placeholder="Background image URL"
-                disabled={uploadingBackground}
-              />
-              <small style={{ color: '#666' }}>
-                Upload a background image or enter a URL. Will be used as a subtle background pattern.
-              </small>
-            </div>
-            {uiSettings.background_image_url && (
-              <div style={{ width: '60px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                <img 
-                  src={uiSettings.background_image_url} 
-                  alt="Background preview" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }}
-                />
-                <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
-              </div>
-            )}
-          </div>
-          {uploadingBackground && <div style={{ color: '#666', fontSize: '14px' }}>Uploading background...</div>}
-        </div>
-      </div>
-
-      {/* Super Admin Settings - Map Markers (only for super admins) */}
-      {user?.is_admin && (
-        <div className="card">
-          <h2>Map Markers (Super Admin)</h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Configure custom map markers for online and offline screens. These settings are only available to super administrators.
-          </p>
-          
-          <div className="form-group">
-            <label className="form-label">Online Screen Marker</label>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e.target.files[0], 'map_marker_online')}
-                  disabled={uploadingMapMarkerOnline}
-                  style={{ marginBottom: '10px' }}
-                />
-                <input
-                  type="text"
-                  className="form-input"
-                  value={adminSettings.mapMarkerOnline}
-                  onChange={(e) => handleAdminInputChange('mapMarkerOnline', e.target.value)}
-                  placeholder="Online marker URL"
-                  disabled={uploadingMapMarkerOnline}
-                />
-                <small style={{ color: '#666' }}>
-                  Upload a custom marker or enter a URL. Leave empty for default green marker.
-                </small>
-              </div>
-              {adminSettings.mapMarkerOnline && (
-                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                  <img 
-                    src={adminSettings.mapMarkerOnline} 
-                    alt="Online marker preview" 
-                    style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                  <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
-                </div>
-              )}
-            </div>
-            {uploadingMapMarkerOnline && <div style={{ color: '#666', fontSize: '14px' }}>Uploading online marker...</div>}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Offline Screen Marker</label>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e.target.files[0], 'map_marker_offline')}
-                  disabled={uploadingMapMarkerOffline}
-                  style={{ marginBottom: '10px' }}
-                />
-                <input
-                  type="text"
-                  className="form-input"
-                  value={adminSettings.mapMarkerOffline}
-                  onChange={(e) => handleAdminInputChange('mapMarkerOffline', e.target.value)}
-                  placeholder="Offline marker URL"
-                  disabled={uploadingMapMarkerOffline}
-                />
-                <small style={{ color: '#666' }}>
-                  Upload a custom marker or enter a URL. Leave empty for default red marker.
-                </small>
-              </div>
-              {adminSettings.mapMarkerOffline && (
-                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                  <img 
-                    src={adminSettings.mapMarkerOffline} 
-                    alt="Offline marker preview" 
-                    style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                  <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
-                </div>
-              )}
-            </div>
-            {uploadingMapMarkerOffline && <div style={{ color: '#666', fontSize: '14px' }}>Uploading offline marker...</div>}
-          </div>
-        </div>
-      )}
-
-      {/* Super Admin Settings - Advanced Settings (only for super admins) */}
-      {user?.is_admin && (
-        <div className="card">
-          <h2>Advanced Settings (Super Admin)</h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Advanced system settings that affect the entire application. Only super administrators can modify these.
-          </p>
-          
-          <div className="form-group">
-            <label className="form-label">Header Logo Text</label>
-            <input
-              type="text"
-              className="form-input"
-              value={adminSettings.logoText}
-              onChange={(e) => handleAdminInputChange('logoText', e.target.value)}
-              placeholder="LXCloud"
-            />
-            <small style={{ color: '#666' }}>
-              Text displayed when no logo URL is provided in the header.
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Site Name (Browser Title)</label>
-            <input
-              type="text"
-              className="form-input"
-              value={adminSettings.siteName}
-              onChange={(e) => handleAdminInputChange('siteName', e.target.value)}
-              placeholder="LXCloud - LED Screen Management Platform"
-            />
-            <small style={{ color: '#666' }}>
-              This appears in the browser title bar and bookmarks.
-            </small>
-          </div>
-
-          <div className="form-group">
-            <h3>Preview</h3>
-            <div style={{ display: 'grid', gap: '20px' }}>
-              <div>
-                <h4>Header Logo Preview</h4>
-                <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '15px', borderRadius: '8px', color: 'white' }}>
-                  {uiSettings.logo_url ? (
-                    <img 
-                      src={uiSettings.logo_url} 
-                      alt={adminSettings.logoText} 
-                      style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'inline';
-                      }}
-                    />
-                  ) : null}
-                  <span style={{ display: uiSettings.logo_url ? 'none' : 'inline', fontSize: '1.8rem', fontWeight: 'bold' }}>
-                    {adminSettings.logoText}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <h4>Browser Title Preview</h4>
-                <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                  <strong>{adminSettings.siteName}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer Customization */}
-      <div className="card">
-        <h2>Footer Customization</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Customize the footer appearance and content that appears at the bottom of all pages.
-        </p>
-        
-        <div className="form-group">
-          <label className="form-label">
-            <input
-              type="checkbox"
-              checked={uiSettings.footer_enabled === 'true'}
-              onChange={(e) => handleInputChange('footer_enabled', e.target.checked ? 'true' : 'false')}
-              style={{ marginRight: '10px' }}
-            />
-            Enable Footer
-          </label>
-          <small style={{ color: '#666' }}>
-            Show or hide the footer on all pages
-          </small>
-        </div>
-
-        {uiSettings.footer_enabled === 'true' && (
-          <>
-            <div className="form-group">
-              <label className="form-label">Footer Text</label>
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.footer_text}
-                onChange={(e) => handleInputChange('footer_text', e.target.value)}
-                placeholder="Powered by LXCloud"
-              />
-              <small style={{ color: '#666' }}>
-                Text displayed in the center of the footer
-              </small>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-              <div className="form-group">
-                <label className="form-label">Footer Background Color</label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <input
-                    type="color"
-                    value={uiSettings.footer_color}
-                    onChange={(e) => handleInputChange('footer_color', e.target.value)}
-                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-                  />
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={uiSettings.footer_color}
-                    onChange={(e) => handleInputChange('footer_color', e.target.value)}
-                    placeholder="#f8f9fa"
-                    style={{ flex: 1 }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Footer Text Color</label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <input
-                    type="color"
-                    value={uiSettings.footer_text_color}
-                    onChange={(e) => handleInputChange('footer_text_color', e.target.value)}
-                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
-                  />
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={uiSettings.footer_text_color}
-                    onChange={(e) => handleInputChange('footer_text_color', e.target.value)}
-                    placeholder="#6c757d"
-                    style={{ flex: 1 }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <h4>Footer Preview</h4>
-              <div style={{ 
-                background: uiSettings.footer_color, 
-                color: uiSettings.footer_text_color, 
-                padding: '15px', 
-                borderRadius: '8px',
-                textAlign: 'center',
-                border: '1px solid #ddd'
-              }}>
-                {uiSettings.footer_text}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Typography Settings */}
-      <div className="card">
-        <h2>Typography Settings</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Customize fonts, sizes, and text styling across the application.
-        </p>
-        
-        <div className="form-group">
-          <label className="form-label">Font Family</label>
-          <select
-            className="form-input"
-            value={uiSettings.font_family}
-            onChange={(e) => handleInputChange('font_family', e.target.value)}
-          >
-            <option value="system-ui, -apple-system, sans-serif">System Default</option>
-            <option value="Arial, sans-serif">Arial</option>
-            <option value="Helvetica, sans-serif">Helvetica</option>
-            <option value="'Times New Roman', serif">Times New Roman</option>
-            <option value="Georgia, serif">Georgia</option>
-            <option value="'Courier New', monospace">Courier New</option>
-            <option value="'Roboto', sans-serif">Roboto</option>
-            <option value="'Open Sans', sans-serif">Open Sans</option>
-            <option value="'Lato', sans-serif">Lato</option>
-          </select>
-          <small style={{ color: '#666' }}>
-            Choose the primary font family for the application
-          </small>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-          <div className="form-group">
-            <label className="form-label">Base Font Size</label>
-            <input
-              type="text"
-              className="form-input"
-              value={uiSettings.font_size_base}
-              onChange={(e) => handleInputChange('font_size_base', e.target.value)}
-              placeholder="16px"
-            />
-            <small style={{ color: '#666' }}>
-              Base text size (e.g., 16px, 1rem)
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Heading Font Size</label>
-            <input
-              type="text"
-              className="form-input"
-              value={uiSettings.font_size_heading}
-              onChange={(e) => handleInputChange('font_size_heading', e.target.value)}
-              placeholder="24px"
-            />
-            <small style={{ color: '#666' }}>
-              Main heading size (e.g., 24px, 1.5rem)
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Line Height</label>
-            <input
-              type="text"
-              className="form-input"
-              value={uiSettings.line_height}
-              onChange={(e) => handleInputChange('line_height', e.target.value)}
-              placeholder="1.5"
-            />
-            <small style={{ color: '#666' }}>
-              Text line spacing (e.g., 1.5, 1.6)
-            </small>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <h4>Typography Preview</h4>
-          <div style={{ 
-            fontFamily: uiSettings.font_family,
-            fontSize: uiSettings.font_size_base,
-            lineHeight: uiSettings.line_height,
-            padding: '20px',
-            border: '1px solid #ddd',
-            borderRadius: '8px'
-          }}>
-            <h1 style={{ fontSize: uiSettings.font_size_heading, margin: '0 0 10px 0' }}>
-              Heading Example
-            </h1>
-            <p style={{ margin: '0' }}>
-              This is a sample paragraph showing how your typography settings will appear. 
-              The font family, size, and line height are applied to demonstrate the visual impact.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Advanced Button Customization */}
-      <div className="card">
-        <h2>Advanced Button Styling</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Configure advanced button appearance and behavior.
-        </p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-          <div className="form-group">
-            <label className="form-label">Button Style</label>
-            <select
-              className="form-input"
-              value={uiSettings.button_style}
-              onChange={(e) => handleInputChange('button_style', e.target.value)}
-            >
-              <option value="default">Default</option>
-              <option value="rounded">Rounded</option>
-              <option value="square">Square</option>
-              <option value="outline">Outline</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Button Size</label>
-            <select
-              className="form-input"
-              value={uiSettings.button_size}
-              onChange={(e) => handleInputChange('button_size', e.target.value)}
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">
-              <input
-                type="checkbox"
-                checked={uiSettings.button_shadow === 'true'}
-                onChange={(e) => handleInputChange('button_shadow', e.target.checked ? 'true' : 'false')}
-                style={{ marginRight: '10px' }}
-              />
-              Button Shadow
-            </label>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">
-              <input
-                type="checkbox"
-                checked={uiSettings.button_animation === 'true'}
-                onChange={(e) => handleInputChange('button_animation', e.target.checked ? 'true' : 'false')}
-                style={{ marginRight: '10px' }}
-              />
-              Button Animations
-            </label>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <h4>Advanced Button Preview</h4>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {['primary', 'secondary', 'success', 'danger'].map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`button button-${type === 'primary' ? '' : type}`}
-                style={{
-                  borderRadius: uiSettings.button_style === 'rounded' ? '25px' : 
-                              uiSettings.button_style === 'square' ? '0' : '8px',
-                  padding: uiSettings.button_size === 'small' ? '8px 16px' :
-                          uiSettings.button_size === 'large' ? '16px 32px' : '12px 24px',
-                  fontSize: uiSettings.button_size === 'small' ? '14px' :
-                          uiSettings.button_size === 'large' ? '18px' : '16px',
-                  boxShadow: uiSettings.button_shadow === 'true' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                  transition: uiSettings.button_animation === 'true' ? 'all 0.2s ease' : 'none',
-                  border: uiSettings.button_style === 'outline' ? '2px solid currentColor' : undefined,
-                  background: uiSettings.button_style === 'outline' ? 'transparent' : undefined
-                }}
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Header Button Customization (Super Admin) */}
-      {user?.is_admin && (
-        <div className="card">
-          <h2>Header Button Customization (Super Admin)</h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Advanced controls for positioning and styling header navigation buttons. Only super administrators can modify these settings.
-          </p>
-          
-          {/* Global Header Button Settings */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-            <div className="form-group">
-              <label className="form-label">Button Alignment</label>
-              <select
-                className="form-input"
-                value={uiSettings.header_button_alignment}
-                onChange={(e) => handleInputChange('header_button_alignment', e.target.value)}
-              >
-                <option value="default">Default</option>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-                <option value="justify">Justify (Space Between)</option>
-              </select>
-              <small style={{ color: '#666' }}>
-                Horizontal alignment of header navigation buttons
-              </small>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Vertical Alignment</label>
-              <select
-                className="form-input"
-                value={uiSettings.header_button_vertical_alignment}
-                onChange={(e) => handleInputChange('header_button_vertical_alignment', e.target.value)}
-              >
-                <option value="center">Center</option>
-                <option value="top">Top</option>
-                <option value="bottom">Bottom</option>
-              </select>
-              <small style={{ color: '#666' }}>
-                Vertical alignment of header navigation buttons
-              </small>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Button Spacing</label>
-              <input
-                type="text"
-                className="form-input"
-                value={uiSettings.header_button_spacing}
-                onChange={(e) => handleInputChange('header_button_spacing', e.target.value)}
-                placeholder="15px"
-              />
-              <small style={{ color: '#666' }}>
-                Gap between header navigation buttons (e.g., 15px, 1rem)
-              </small>
-            </div>
-          </div>
-
-          {/* Individual Button Customization */}
-          <div className="form-group" style={{ marginTop: '30px' }}>
-            <h3>Individual Button Customization</h3>
-            <p style={{ color: '#666', marginBottom: '20px' }}>
-              Customize positioning and colors for each header button individually.
-            </p>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
-              {[
-                { key: 'dashboard', label: 'Dashboard Button', path: '/' },
-                { key: 'screens', label: 'Manage Screens Button', path: '/screens' },
-                { key: 'admin', label: 'Admin Panel Button', path: '/admin' },
-                { key: 'user-dropdown', label: 'User Dropdown', path: null }
-              ].map((button) => (
-                <div key={button.key} className="form-group" style={{ border: '1px solid #e5e7eb', padding: '20px', borderRadius: '8px' }}>
-                  <h4 style={{ marginBottom: '15px', color: '#333' }}>{button.label}</h4>
-                  
-                  {/* Position Settings */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <h5 style={{ marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>Position</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Top</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={headerButtonPositions[button.key]?.marginTop || ''}
-                          onChange={(e) => {
-                            const updatedPositions = {
-                              ...headerButtonPositions,
-                              [button.key]: {
-                                ...headerButtonPositions[button.key],
-                                marginTop: e.target.value
-                              }
-                            };
-                            setHeaderButtonPositions(updatedPositions);
-                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
-                          }}
-                          placeholder="0px"
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Right</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={headerButtonPositions[button.key]?.marginRight || ''}
-                          onChange={(e) => {
-                            const updatedPositions = {
-                              ...headerButtonPositions,
-                              [button.key]: {
-                                ...headerButtonPositions[button.key],
-                                marginRight: e.target.value
-                              }
-                            };
-                            setHeaderButtonPositions(updatedPositions);
-                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
-                          }}
-                          placeholder="0px"
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Bottom</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={headerButtonPositions[button.key]?.marginBottom || ''}
-                          onChange={(e) => {
-                            const updatedPositions = {
-                              ...headerButtonPositions,
-                              [button.key]: {
-                                ...headerButtonPositions[button.key],
-                                marginBottom: e.target.value
-                              }
-                            };
-                            setHeaderButtonPositions(updatedPositions);
-                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
-                          }}
-                          placeholder="0px"
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Left</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={headerButtonPositions[button.key]?.marginLeft || ''}
-                          onChange={(e) => {
-                            const updatedPositions = {
-                              ...headerButtonPositions,
-                              [button.key]: {
-                                ...headerButtonPositions[button.key],
-                                marginLeft: e.target.value
-                              }
-                            };
-                            setHeaderButtonPositions(updatedPositions);
-                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
-                          }}
-                          placeholder="0px"
-                        />
-                      </div>
-                    </div>
-                    <div style={{ marginTop: '10px' }}>
-                      <label className="form-label" style={{ fontSize: '12px' }}>Display Order</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={headerButtonPositions[button.key]?.order || ''}
-                        onChange={(e) => {
-                          const updatedPositions = {
-                            ...headerButtonPositions,
-                            [button.key]: {
-                              ...headerButtonPositions[button.key],
-                              order: e.target.value
-                            }
-                          };
-                          setHeaderButtonPositions(updatedPositions);
-                          handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
-                        }}
-                        placeholder="0"
-                      />
-                      <small style={{ color: '#666', fontSize: '11px' }}>
-                        Lower numbers appear first
-                      </small>
-                    </div>
-                  </div>
-
-                  {/* Color Settings */}
-                  <div>
-                    <h5 style={{ marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>Colors</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Text Color</label>
-                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                          <input
-                            type="color"
-                            value={headerButtonColors[button.key]?.color || '#ffffff'}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  color: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
-                          />
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={headerButtonColors[button.key]?.color || ''}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  color: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            placeholder="#ffffff"
-                            style={{ flex: 1 }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Hover Color</label>
-                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                          <input
-                            type="color"
-                            value={headerButtonColors[button.key]?.hoverColor || '#cccccc'}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  hoverColor: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
-                          />
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={headerButtonColors[button.key]?.hoverColor || ''}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  hoverColor: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            placeholder="#cccccc"
-                            style={{ flex: 1 }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Background Color</label>
-                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                          <input
-                            type="color"
-                            value={headerButtonColors[button.key]?.backgroundColor || '#transparent'}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  backgroundColor: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
-                          />
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={headerButtonColors[button.key]?.backgroundColor || ''}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  backgroundColor: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            placeholder="transparent"
-                            style={{ flex: 1 }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '12px' }}>Hover Background</label>
-                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                          <input
-                            type="color"
-                            value={headerButtonColors[button.key]?.hoverBackgroundColor || 'rgba(255,255,255,0.2)'}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  hoverBackgroundColor: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
-                          />
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={headerButtonColors[button.key]?.hoverBackgroundColor || ''}
-                            onChange={(e) => {
-                              const updatedColors = {
-                                ...headerButtonColors,
-                                [button.key]: {
-                                  ...headerButtonColors[button.key],
-                                  hoverBackgroundColor: e.target.value
-                                }
-                              };
-                              setHeaderButtonColors(updatedColors);
-                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                            }}
-                            placeholder="rgba(255,255,255,0.2)"
-                            style={{ flex: 1 }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Clear Button */}
-                  <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      className="button button-small button-secondary"
-                      onClick={() => {
-                        const updatedPositions = { ...headerButtonPositions };
-                        const updatedColors = { ...headerButtonColors };
-                        delete updatedPositions[button.key];
-                        delete updatedColors[button.key];
-                        setHeaderButtonPositions(updatedPositions);
-                        setHeaderButtonColors(updatedColors);
-                        handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
-                        handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
-                      }}
+          {/* Super Admin Advanced Settings (only for super admins) */}
+          {user?.is_admin && (
+            <>
+              <div className="card">
+                <h2>Header Button Customization (Super Admin)</h2>
+                <p style={{ color: '#666', marginBottom: '20px' }}>
+                  Advanced controls for positioning and styling header navigation buttons. Only super administrators can modify these settings.
+                </p>
+                
+                {/* Global Header Button Settings */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Button Alignment</label>
+                    <select
+                      className="form-input"
+                      value={uiSettings.header_button_alignment}
+                      onChange={(e) => handleInputChange('header_button_alignment', e.target.value)}
                     >
-                      Reset {button.label}
-                    </button>
+                      <option value="default">Default</option>
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                      <option value="justify">Justify (Space Between)</option>
+                    </select>
+                    <small style={{ color: '#666' }}>
+                      Horizontal alignment of header navigation buttons
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Vertical Alignment</label>
+                    <select
+                      className="form-input"
+                      value={uiSettings.header_button_vertical_alignment}
+                      onChange={(e) => handleInputChange('header_button_vertical_alignment', e.target.value)}
+                    >
+                      <option value="center">Center</option>
+                      <option value="top">Top</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                    <small style={{ color: '#666' }}>
+                      Vertical alignment of header navigation buttons
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Button Spacing</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={uiSettings.header_button_spacing}
+                      onChange={(e) => handleInputChange('header_button_spacing', e.target.value)}
+                      placeholder="15px"
+                    />
+                    <small style={{ color: '#666' }}>
+                      Gap between header navigation buttons (e.g., 15px, 1rem)
+                    </small>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Header Custom CSS */}
-          <div className="form-group" style={{ marginTop: '30px' }}>
-            <label className="form-label">Header Custom CSS</label>
-            <textarea
-              className="form-input"
-              value={uiSettings.header_custom_css}
-              onChange={(e) => handleInputChange('header_custom_css', e.target.value)}
-              placeholder="/* Add custom CSS specifically for header styling */
+                {/* Header Custom CSS */}
+                <div className="form-group" style={{ marginTop: '30px' }}>
+                  <label className="form-label">Header Custom CSS</label>
+                  <textarea
+                    className="form-input"
+                    value={uiSettings.header_custom_css}
+                    onChange={(e) => handleInputChange('header_custom_css', e.target.value)}
+                    placeholder="/* Add custom CSS specifically for header styling */
 .header .nav-link {
   /* Your custom header button styles */
 }
@@ -1893,244 +794,816 @@ const CloudUICustomization = () => {
 .header .logo {
   /* Your custom logo styles */
 }"
-              rows="8"
-              style={{ fontFamily: 'monospace', fontSize: '14px' }}
-            />
-            <small style={{ color: '#666' }}>
-              Add custom CSS specifically for header customization. This CSS will be applied after all other header styles.
-            </small>
-          </div>
-
-          {/* Preview */}
-          <div className="form-group" style={{ marginTop: '30px' }}>
-            <h4>Header Preview</h4>
-            <div style={{ 
-              background: uiSettings.header_color || '#667eea',
-              color: uiSettings.header_text_color || '#ffffff',
-              padding: '15px',
-              borderRadius: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' : 
-                         uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
-            }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                {uiSettings.app_name || 'LXCloud'}
+                    rows="6"
+                    style={{ fontFamily: 'monospace', fontSize: '14px' }}
+                  />
+                  <small style={{ color: '#666' }}>
+                    Add custom CSS specifically for header customization. This CSS will be applied after all other header styles.
+                  </small>
+                </div>
               </div>
-              <div style={{ 
-                display: 'flex',
-                gap: uiSettings.header_button_spacing || '15px',
-                justifyContent: uiSettings.header_button_alignment === 'center' ? 'center' :
-                              uiSettings.header_button_alignment === 'right' ? 'flex-end' :
-                              uiSettings.header_button_alignment === 'justify' ? 'space-between' : 'flex-start',
-                alignItems: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' : 
-                           uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
-              }}>
-                <span style={{ 
-                  color: headerButtonColors.dashboard?.color || uiSettings.header_text_color || '#ffffff',
-                  backgroundColor: headerButtonColors.dashboard?.backgroundColor || 'transparent',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  ...(headerButtonPositions.dashboard?.marginTop && { marginTop: headerButtonPositions.dashboard.marginTop }),
-                  ...(headerButtonPositions.dashboard?.marginLeft && { marginLeft: headerButtonPositions.dashboard.marginLeft }),
-                  ...(headerButtonPositions.dashboard?.marginRight && { marginRight: headerButtonPositions.dashboard.marginRight }),
-                  ...(headerButtonPositions.dashboard?.marginBottom && { marginBottom: headerButtonPositions.dashboard.marginBottom })
-                }}>
-                  Dashboard
-                </span>
-                <span style={{ 
-                  color: headerButtonColors.screens?.color || uiSettings.header_text_color || '#ffffff',
-                  backgroundColor: headerButtonColors.screens?.backgroundColor || 'transparent',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  ...(headerButtonPositions.screens?.marginTop && { marginTop: headerButtonPositions.screens.marginTop }),
-                  ...(headerButtonPositions.screens?.marginLeft && { marginLeft: headerButtonPositions.screens.marginLeft }),
-                  ...(headerButtonPositions.screens?.marginRight && { marginRight: headerButtonPositions.screens.marginRight }),
-                  ...(headerButtonPositions.screens?.marginBottom && { marginBottom: headerButtonPositions.screens.marginBottom })
-                }}>
-                  Manage Screens
-                </span>
-                <span style={{ 
-                  color: headerButtonColors.admin?.color || uiSettings.header_text_color || '#ffffff',
-                  backgroundColor: headerButtonColors.admin?.backgroundColor || 'transparent',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  ...(headerButtonPositions.admin?.marginTop && { marginTop: headerButtonPositions.admin.marginTop }),
-                  ...(headerButtonPositions.admin?.marginLeft && { marginLeft: headerButtonPositions.admin.marginLeft }),
-                  ...(headerButtonPositions.admin?.marginRight && { marginRight: headerButtonPositions.admin.marginRight }),
-                  ...(headerButtonPositions.admin?.marginBottom && { marginBottom: headerButtonPositions.admin.marginBottom })
-                }}>
-                  Admin Panel
-                </span>
-                <span style={{ 
-                  color: headerButtonColors['user-dropdown']?.color || uiSettings.header_text_color || '#ffffff',
-                  backgroundColor: headerButtonColors['user-dropdown']?.backgroundColor || 'transparent',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  ...(headerButtonPositions['user-dropdown']?.marginTop && { marginTop: headerButtonPositions['user-dropdown'].marginTop }),
-                  ...(headerButtonPositions['user-dropdown']?.marginLeft && { marginLeft: headerButtonPositions['user-dropdown'].marginLeft }),
-                  ...(headerButtonPositions['user-dropdown']?.marginRight && { marginRight: headerButtonPositions['user-dropdown'].marginRight }),
-                  ...(headerButtonPositions['user-dropdown']?.marginBottom && { marginBottom: headerButtonPositions['user-dropdown'].marginBottom })
-                }}>
-                  Welcome, Admin ▼
-                </span>
+
+              <div className="card">
+                <h2>Advanced Settings (Super Admin)</h2>
+                <p style={{ color: '#666', marginBottom: '20px' }}>
+                  Advanced system settings that affect the entire application. Only super administrators can modify these.
+                </p>
+                
+                <div className="form-group">
+                  <label className="form-label">Header Logo Text</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={adminSettings.logoText}
+                    onChange={(e) => handleAdminInputChange('logoText', e.target.value)}
+                    placeholder="LXCloud"
+                  />
+                  <small style={{ color: '#666' }}>
+                    Text displayed when no logo URL is provided in the header.
+                  </small>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Site Name (Browser Title)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={adminSettings.siteName}
+                    onChange={(e) => handleAdminInputChange('siteName', e.target.value)}
+                    placeholder="LXCloud - LED Screen Management Platform"
+                  />
+                  <small style={{ color: '#666' }}>
+                    This appears in the browser title bar and bookmarks.
+                  </small>
+                </div>
+              </div>
+            </>
+          )}
+        </TabPanel>
+
+        {/* Footer Tab */}
+        <TabPanel label="🦶 Footer">
+          <div className="card">
+            <h2>Footer Customization</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Customize the footer appearance and content that appears at the bottom of all pages.
+            </p>
+            
+            <div className="form-group">
+              <label className="form-label">
+                <input
+                  type="checkbox"
+                  checked={uiSettings.footer_enabled === 'true'}
+                  onChange={(e) => handleInputChange('footer_enabled', e.target.checked ? 'true' : 'false')}
+                  style={{ marginRight: '10px' }}
+                />
+                Enable Footer
+              </label>
+              <small style={{ color: '#666' }}>
+                Show or hide the footer on all pages
+              </small>
+            </div>
+
+            {uiSettings.footer_enabled === 'true' && (
+              <>
+                <div className="form-group">
+                  <label className="form-label">Footer Text</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.footer_text}
+                    onChange={(e) => handleInputChange('footer_text', e.target.value)}
+                    placeholder="Powered by LXCloud"
+                  />
+                  <small style={{ color: '#666' }}>
+                    Text displayed in the center of the footer
+                  </small>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Footer Background Color</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        type="color"
+                        value={uiSettings.footer_color}
+                        onChange={(e) => handleInputChange('footer_color', e.target.value)}
+                        style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={uiSettings.footer_color}
+                        onChange={(e) => handleInputChange('footer_color', e.target.value)}
+                        placeholder="#f8f9fa"
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Footer Text Color</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        type="color"
+                        value={uiSettings.footer_text_color}
+                        onChange={(e) => handleInputChange('footer_text_color', e.target.value)}
+                        style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={uiSettings.footer_text_color}
+                        onChange={(e) => handleInputChange('footer_text_color', e.target.value)}
+                        placeholder="#6c757d"
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <h4>Footer Preview</h4>
+                  <div style={{ 
+                    background: uiSettings.footer_color, 
+                    color: uiSettings.footer_text_color, 
+                    padding: '15px', 
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    border: '1px solid #ddd'
+                  }}>
+                    {uiSettings.footer_text}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </TabPanel>
+
+        {/* Pages & Content Tab */}
+        <TabPanel label="📄 Pages & Content">
+          <div className="card">
+            <h2>Button Customization</h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Button Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.button_color}
+                    onChange={(e) => handleInputChange('button_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.button_color}
+                    onChange={(e) => handleInputChange('button_color', e.target.value)}
+                    placeholder="#667eea"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <small style={{ color: '#666' }}>
+                  Default color for all buttons
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Button Hover Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={uiSettings.button_hover_color}
+                    onChange={(e) => handleInputChange('button_hover_color', e.target.value)}
+                    style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.button_hover_color}
+                    onChange={(e) => handleInputChange('button_hover_color', e.target.value)}
+                    placeholder="#5a6fd8"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <small style={{ color: '#666' }}>
+                  Color when hovering over buttons
+                </small>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '30px' }}>
+              <label className="form-label">Custom Button Images</label>
+              <p style={{ color: '#666', marginBottom: '20px' }}>
+                Upload custom images to replace specific button types. The image will replace the button background.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                {['primary', 'secondary', 'danger', 'success', 'warning'].map((buttonType) => (
+                  <div key={buttonType} className="form-group">
+                    <label className="form-label" style={{ textTransform: 'capitalize' }}>
+                      {buttonType} Button Image
+                    </label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e.target.files[0], `button_${buttonType}`)}
+                          disabled={uploadingButtonImage === `button_${buttonType}`}
+                          style={{ marginBottom: '10px' }}
+                        />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={customButtonImages[buttonType] || ''}
+                          onChange={(e) => {
+                            const updatedImages = { ...customButtonImages, [buttonType]: e.target.value };
+                            setCustomButtonImages(updatedImages);
+                            handleInputChange('custom_button_images', JSON.stringify(updatedImages));
+                          }}
+                          placeholder={`${buttonType} button image URL`}
+                          disabled={uploadingButtonImage === `button_${buttonType}`}
+                        />
+                        <small style={{ color: '#666' }}>
+                          Upload an image or enter URL for {buttonType} buttons
+                        </small>
+                      </div>
+                      {customButtonImages[buttonType] && (
+                        <div style={{ 
+                          width: '80px', 
+                          height: '40px', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          border: '1px solid #ddd', 
+                          borderRadius: '4px', 
+                          overflow: 'hidden',
+                          backgroundImage: `url(${customButtonImages[buttonType]})`,
+                          backgroundSize: 'contain',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'center'
+                        }}>
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: 'transparent',
+                            textShadow: '0 0 3px rgba(0,0,0,0.5)'
+                          }}>
+                            Preview
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {uploadingButtonImage === `button_${buttonType}` && (
+                      <div style={{ color: '#666', fontSize: '14px' }}>
+                        Uploading {buttonType} button image...
+                      </div>
+                    )}
+                    {customButtonImages[buttonType] && (
+                      <div style={{ marginTop: '10px' }}>
+                        <button
+                          type="button"
+                          className={`button button-${buttonType === 'primary' ? '' : 'secondary'}`}
+                          style={{ 
+                            background: customButtonImages[buttonType] ? 
+                              `url(${customButtonImages[buttonType]}) center/contain no-repeat` : 
+                              undefined,
+                            color: customButtonImages[buttonType] ? 'transparent' : undefined,
+                            minHeight: '40px'
+                          }}
+                        >
+                          {buttonType.charAt(0).toUpperCase() + buttonType.slice(1)} Button Preview
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-danger button-small"
+                          onClick={() => {
+                            const updatedImages = { ...customButtonImages };
+                            delete updatedImages[buttonType];
+                            setCustomButtonImages(updatedImages);
+                            handleInputChange('custom_button_images', JSON.stringify(updatedImages));
+                          }}
+                          style={{ marginLeft: '10px' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <h4>Button Preview</h4>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  type="button"
+                  className="button"
+                  style={{ 
+                    background: uiSettings.button_color || '#667eea',
+                    borderColor: uiSettings.button_color || '#667eea'
+                  }}
+                >
+                  Primary Button
+                </button>
+                <button 
+                  type="button"
+                  className="button button-secondary"
+                >
+                  Secondary Button
+                </button>
+                <button 
+                  type="button"
+                  className="button button-danger"
+                >
+                  Danger Button
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Theme and Layout Settings */}
-      <div className="card">
-        <h2>Theme & Layout Settings</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Configure overall theme mode and layout preferences.
-        </p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-          <div className="form-group">
-            <label className="form-label">Theme Mode</label>
-            <select
-              className="form-input"
-              value={uiSettings.theme_mode}
-              onChange={(e) => handleInputChange('theme_mode', e.target.value)}
-            >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto (System)</option>
-            </select>
-            <small style={{ color: '#666' }}>
-              Choose between light, dark, or automatic theme
-            </small>
+          {/* Screen Management Button Icons */}
+          <div className="card">
+            <h2>Screen Management Button Icons</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Upload custom icons to replace the default button icons in the Manage Screens page. 
+              These icons will appear on each screen's action buttons.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
+              {[
+                { key: 'screen_view_data_icon', label: 'View Data Icon', description: 'Icon for the view data button (📊)', defaultIcon: '📊' },
+                { key: 'screen_edit_icon', label: 'Edit Name Icon', description: 'Icon for the edit name button (✏️)', defaultIcon: '✏️' },
+                { key: 'screen_unbind_icon', label: 'Unbind Screen Icon', description: 'Icon for the unbind screen button (🔗❌)', defaultIcon: '🔗❌' }
+              ].map((iconConfig) => (
+                <div key={iconConfig.key} className="form-group">
+                  <label className="form-label">{iconConfig.label}</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e.target.files[0], iconConfig.key)}
+                        disabled={uploadingButtonImage === iconConfig.key}
+                        style={{ marginBottom: '10px' }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={uiSettings[iconConfig.key] || ''}
+                        onChange={(e) => handleInputChange(iconConfig.key, e.target.value)}
+                        placeholder={`${iconConfig.label} URL`}
+                        disabled={uploadingButtonImage === iconConfig.key}
+                      />
+                      <small style={{ color: '#666' }}>
+                        {iconConfig.description}. Upload an image or enter URL.
+                      </small>
+                    </div>
+                    {uiSettings[iconConfig.key] ? (
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        border: '1px solid #ddd', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        backgroundImage: `url(${uiSettings[iconConfig.key]})`,
+                        backgroundSize: 'contain',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center'
+                      }}>
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        border: '1px solid #ddd', 
+                        borderRadius: '4px',
+                        fontSize: '16px'
+                      }}>
+                        {iconConfig.defaultIcon}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Border Radius</label>
-            <input
-              type="text"
-              className="form-input"
-              value={uiSettings.border_radius}
-              onChange={(e) => handleInputChange('border_radius', e.target.value)}
-              placeholder="8px"
-            />
-            <small style={{ color: '#666' }}>
-              Global border radius for cards and components
-            </small>
+          {/* Typography Settings */}
+          <div className="card">
+            <h2>Typography Settings</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Customize fonts, sizes, and text styling across the application.
+            </p>
+            
+            <div className="form-group">
+              <label className="form-label">Font Family</label>
+              <select
+                className="form-input"
+                value={uiSettings.font_family}
+                onChange={(e) => handleInputChange('font_family', e.target.value)}
+              >
+                <option value="system-ui, -apple-system, sans-serif">System Default</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Helvetica, sans-serif">Helvetica</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Open Sans', sans-serif">Open Sans</option>
+                <option value="'Lato', sans-serif">Lato</option>
+              </select>
+              <small style={{ color: '#666' }}>
+                Choose the primary font family for the application
+              </small>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Base Font Size</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={uiSettings.font_size_base}
+                  onChange={(e) => handleInputChange('font_size_base', e.target.value)}
+                  placeholder="16px"
+                />
+                <small style={{ color: '#666' }}>
+                  Base text size (e.g., 16px, 1rem)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Heading Font Size</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={uiSettings.font_size_heading}
+                  onChange={(e) => handleInputChange('font_size_heading', e.target.value)}
+                  placeholder="24px"
+                />
+                <small style={{ color: '#666' }}>
+                  Main heading size (e.g., 24px, 1.5rem)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Line Height</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={uiSettings.line_height}
+                  onChange={(e) => handleInputChange('line_height', e.target.value)}
+                  placeholder="1.5"
+                />
+                <small style={{ color: '#666' }}>
+                  Text line spacing (e.g., 1.5, 1.6)
+                </small>
+              </div>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Spacing Unit</label>
-            <input
-              type="text"
-              className="form-input"
-              value={uiSettings.spacing_unit}
-              onChange={(e) => handleInputChange('spacing_unit', e.target.value)}
-              placeholder="16px"
-            />
-            <small style={{ color: '#666' }}>
-              Base spacing unit for consistent margins and padding
-            </small>
+          {/* Background & Theme */}
+          <div className="card">
+            <h2>Background & Theme</h2>
+            
+            <div className="form-group">
+              <label className="form-label">Background Image</label>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e.target.files[0], 'background')}
+                    disabled={uploadingBackground}
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings.background_image_url}
+                    onChange={(e) => handleInputChange('background_image_url', e.target.value)}
+                    placeholder="Background image URL"
+                    disabled={uploadingBackground}
+                  />
+                  <small style={{ color: '#666' }}>
+                    Upload a background image or enter a URL. Will be used as a subtle background pattern.
+                  </small>
+                </div>
+                {uiSettings.background_image_url && (
+                  <div style={{ width: '60px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                    <img 
+                      src={uiSettings.background_image_url} 
+                      alt="Background preview" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                  </div>
+                )}
+              </div>
+              {uploadingBackground && <div style={{ color: '#666', fontSize: '14px' }}>Uploading background...</div>}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Theme Mode</label>
+                <select
+                  className="form-input"
+                  value={uiSettings.theme_mode}
+                  onChange={(e) => handleInputChange('theme_mode', e.target.value)}
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="auto">Auto (System)</option>
+                </select>
+                <small style={{ color: '#666' }}>
+                  Choose between light, dark, or automatic theme
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Border Radius</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={uiSettings.border_radius}
+                  onChange={(e) => handleInputChange('border_radius', e.target.value)}
+                  placeholder="8px"
+                />
+                <small style={{ color: '#666' }}>
+                  Global border radius for cards and components
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Dashboard Layout</label>
+                <select
+                  className="form-input"
+                  value={uiSettings.dashboard_layout}
+                  onChange={(e) => handleInputChange('dashboard_layout', e.target.value)}
+                >
+                  <option value="grid">Grid View</option>
+                  <option value="list">List View</option>
+                  <option value="cards">Card View</option>
+                </select>
+                <small style={{ color: '#666' }}>
+                  Default layout for the dashboard page
+                </small>
+              </div>
+            </div>
           </div>
-        </div>
+        </TabPanel>
 
-        <div className="form-group">
-          <label className="form-label">Dashboard Layout</label>
-          <select
-            className="form-input"
-            value={uiSettings.dashboard_layout}
-            onChange={(e) => handleInputChange('dashboard_layout', e.target.value)}
-          >
-            <option value="grid">Grid View</option>
-            <option value="list">List View</option>
-            <option value="cards">Card View</option>
-          </select>
-          <small style={{ color: '#666' }}>
-            Default layout for the dashboard page
-          </small>
-        </div>
-      </div>
+        {/* Advanced Tab */}
+        <TabPanel label="⚙️ Advanced">
+          {/* Advanced Button Customization */}
+          <div className="card">
+            <h2>Advanced Button Styling</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Configure advanced button appearance and behavior.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Button Style</label>
+                <select
+                  className="form-input"
+                  value={uiSettings.button_style}
+                  onChange={(e) => handleInputChange('button_style', e.target.value)}
+                >
+                  <option value="default">Default</option>
+                  <option value="rounded">Rounded</option>
+                  <option value="square">Square</option>
+                  <option value="outline">Outline</option>
+                </select>
+              </div>
 
-      {/* Accessibility Settings */}
-      <div className="card">
-        <h2>Accessibility Settings</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Configure accessibility features to improve usability for all users.
-        </p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-          <div className="form-group">
-            <label className="form-label">
-              <input
-                type="checkbox"
-                checked={uiSettings.high_contrast === 'true'}
-                onChange={(e) => handleInputChange('high_contrast', e.target.checked ? 'true' : 'false')}
-                style={{ marginRight: '10px' }}
-              />
-              High Contrast Mode
-            </label>
-            <small style={{ color: '#666' }}>
-              Increase contrast for better visibility
-            </small>
+              <div className="form-group">
+                <label className="form-label">Button Size</label>
+                <select
+                  className="form-input"
+                  value={uiSettings.button_size}
+                  onChange={(e) => handleInputChange('button_size', e.target.value)}
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    checked={uiSettings.button_shadow === 'true'}
+                    onChange={(e) => handleInputChange('button_shadow', e.target.checked ? 'true' : 'false')}
+                    style={{ marginRight: '10px' }}
+                  />
+                  Button Shadow
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    checked={uiSettings.button_animation === 'true'}
+                    onChange={(e) => handleInputChange('button_animation', e.target.checked ? 'true' : 'false')}
+                    style={{ marginRight: '10px' }}
+                  />
+                  Button Animations
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">
-              <input
-                type="checkbox"
-                checked={uiSettings.large_text === 'true'}
-                onChange={(e) => handleInputChange('large_text', e.target.checked ? 'true' : 'false')}
-                style={{ marginRight: '10px' }}
-              />
-              Large Text
-            </label>
-            <small style={{ color: '#666' }}>
-              Increase font sizes for better readability
-            </small>
+          {/* Accessibility Settings */}
+          <div className="card">
+            <h2>Accessibility Settings</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Configure accessibility features to improve usability for all users.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    checked={uiSettings.high_contrast === 'true'}
+                    onChange={(e) => handleInputChange('high_contrast', e.target.checked ? 'true' : 'false')}
+                    style={{ marginRight: '10px' }}
+                  />
+                  High Contrast Mode
+                </label>
+                <small style={{ color: '#666' }}>
+                  Increase contrast for better visibility
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    checked={uiSettings.large_text === 'true'}
+                    onChange={(e) => handleInputChange('large_text', e.target.checked ? 'true' : 'false')}
+                    style={{ marginRight: '10px' }}
+                  />
+                  Large Text
+                </label>
+                <small style={{ color: '#666' }}>
+                  Increase font sizes for better readability
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    checked={uiSettings.reduced_motion === 'true'}
+                    onChange={(e) => handleInputChange('reduced_motion', e.target.checked ? 'true' : 'false')}
+                    style={{ marginRight: '10px' }}
+                  />
+                  Reduced Motion
+                </label>
+                <small style={{ color: '#666' }}>
+                  Minimize animations and transitions
+                </small>
+              </div>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">
-              <input
-                type="checkbox"
-                checked={uiSettings.reduced_motion === 'true'}
-                onChange={(e) => handleInputChange('reduced_motion', e.target.checked ? 'true' : 'false')}
-                style={{ marginRight: '10px' }}
-              />
-              Reduced Motion
-            </label>
-            <small style={{ color: '#666' }}>
-              Minimize animations and transitions
-            </small>
-          </div>
-        </div>
-      </div>
-
-      {/* Custom CSS Injection */}
-      <div className="card">
-        <h2>Custom CSS (Advanced)</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Inject custom CSS for advanced styling. Use with caution as incorrect CSS can break the interface.
-        </p>
-        
-        <div className="form-group">
-          <label className="form-label">Custom CSS Code</label>
-          <textarea
-            className="form-input"
-            value={uiSettings.custom_css}
-            onChange={(e) => handleInputChange('custom_css', e.target.value)}
-            placeholder="/* Add your custom CSS here */
+          {/* Custom CSS Injection */}
+          <div className="card">
+            <h2>Custom CSS (Advanced)</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Inject custom CSS for advanced styling. Use with caution as incorrect CSS can break the interface.
+            </p>
+            
+            <div className="form-group">
+              <label className="form-label">Custom CSS Code</label>
+              <textarea
+                className="form-input"
+                value={uiSettings.custom_css}
+                onChange={(e) => handleInputChange('custom_css', e.target.value)}
+                placeholder="/* Add your custom CSS here */
 .custom-class {
   /* Your styles */
 }"
-            rows="10"
-            style={{ fontFamily: 'monospace', fontSize: '14px' }}
-          />
-          <small style={{ color: '#666' }}>
-            Advanced users can add custom CSS to further customize the appearance.
-            Changes take effect after saving settings.
-          </small>
-        </div>
-      </div>
+                rows="10"
+                style={{ fontFamily: 'monospace', fontSize: '14px' }}
+              />
+              <small style={{ color: '#666' }}>
+                Advanced users can add custom CSS to further customize the appearance.
+                Changes take effect after saving settings.
+              </small>
+            </div>
+          </div>
+
+          {/* Super Admin Settings - Map Markers (only for super admins) */}
+          {user?.is_admin && (
+            <div className="card">
+              <h2>Map Markers (Super Admin)</h2>
+              <p style={{ color: '#666', marginBottom: '20px' }}>
+                Configure custom map markers for online and offline screens. These settings are only available to super administrators.
+              </p>
+              
+              <div className="form-group">
+                <label className="form-label">Online Screen Marker</label>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e.target.files[0], 'map_marker_online')}
+                      disabled={uploadingMapMarkerOnline}
+                      style={{ marginBottom: '10px' }}
+                    />
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminSettings.mapMarkerOnline}
+                      onChange={(e) => handleAdminInputChange('mapMarkerOnline', e.target.value)}
+                      placeholder="Online marker URL"
+                      disabled={uploadingMapMarkerOnline}
+                    />
+                    <small style={{ color: '#666' }}>
+                      Upload a custom marker or enter a URL. Leave empty for default green marker.
+                    </small>
+                  </div>
+                  {adminSettings.mapMarkerOnline && (
+                    <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                      <img 
+                        src={adminSettings.mapMarkerOnline} 
+                        alt="Online marker preview" 
+                        style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                    </div>
+                  )}
+                </div>
+                {uploadingMapMarkerOnline && <div style={{ color: '#666', fontSize: '14px' }}>Uploading online marker...</div>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Offline Screen Marker</label>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e.target.files[0], 'map_marker_offline')}
+                      disabled={uploadingMapMarkerOffline}
+                      style={{ marginBottom: '10px' }}
+                    />
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminSettings.mapMarkerOffline}
+                      onChange={(e) => handleAdminInputChange('mapMarkerOffline', e.target.value)}
+                      placeholder="Offline marker URL"
+                      disabled={uploadingMapMarkerOffline}
+                    />
+                    <small style={{ color: '#666' }}>
+                      Upload a custom marker or enter a URL. Leave empty for default red marker.
+                    </small>
+                  </div>
+                  {adminSettings.mapMarkerOffline && (
+                    <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                      <img 
+                        src={adminSettings.mapMarkerOffline} 
+                        alt="Offline marker preview" 
+                        style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <span style={{ display: 'none', fontSize: '10px', color: '#666' }}>✗</span>
+                    </div>
+                  )}
+                </div>
+                {uploadingMapMarkerOffline && <div style={{ color: '#666', fontSize: '14px' }}>Uploading offline marker...</div>}
+              </div>
+            </div>
+          )}
+        </TabPanel>
+      </Tabs>
 
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
         <button
