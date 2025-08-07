@@ -104,15 +104,21 @@ export const ThemeProvider = ({ children }) => {
     // Add custom button image styles
     Object.entries(customButtonImages).forEach(([buttonClass, imageUrl]) => {
       if (imageUrl) {
+        // Apply to primary buttons for 'primary' class, secondary for 'secondary', etc.
+        const buttonSelector = buttonClass === 'primary' ? 
+          '.button:not(.button-secondary):not(.button-danger):not(.button-warning):not(.button-success)' :
+          `.button.button-${buttonClass}`;
+          
         css += `
-          .button.${buttonClass}, 
-          .button.${buttonClass}:hover {
+          ${buttonSelector}, 
+          ${buttonSelector}:hover {
             background: url('${imageUrl}') center/contain no-repeat !important;
             background-size: contain !important;
             min-height: 40px !important;
             color: transparent !important;
-            border: none !important;
+            border: 1px solid transparent !important;
             box-shadow: none !important;
+            text-shadow: none !important;
           }
         `;
       }
