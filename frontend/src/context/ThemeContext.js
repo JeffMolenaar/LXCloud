@@ -77,6 +77,14 @@ export const ThemeProvider = ({ children }) => {
     header_shadow: 'true',
     header_sticky: 'true',
     
+    // Header button customization
+    header_button_alignment: 'default',
+    header_button_vertical_alignment: 'center',
+    header_button_spacing: '15px',
+    header_button_individual_positions: '{}',
+    header_button_individual_colors: '{}',
+    header_custom_css: '',
+    
     // Card and component styling
     card_shadow: 'true',
     card_border: 'true',
@@ -164,6 +172,23 @@ export const ThemeProvider = ({ children }) => {
 
       .user-dropdown-trigger {
         color: ${themeData.header_text_color || '#ffffff'} !important;
+      }
+
+      /* Header Button Customization */
+      .header .nav-links {
+        ${themeData.header_button_alignment === 'center' ? 'justify-content: center !important;' : ''}
+        ${themeData.header_button_alignment === 'right' ? 'justify-content: flex-end !important;' : ''}
+        ${themeData.header_button_alignment === 'justify' ? 'justify-content: space-between !important;' : ''}
+        ${themeData.header_button_alignment === 'left' ? 'justify-content: flex-start !important;' : ''}
+        align-items: ${themeData.header_button_vertical_alignment === 'top' ? 'flex-start' : 
+                     themeData.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'} !important;
+        gap: ${themeData.header_button_spacing || '15px'} !important;
+      }
+
+      .header .nav-link {
+        ${themeData.header_button_vertical_alignment === 'top' ? 'align-self: flex-start !important;' : ''}
+        ${themeData.header_button_vertical_alignment === 'bottom' ? 'align-self: flex-end !important;' : ''}
+        ${themeData.header_button_vertical_alignment === 'center' ? 'align-self: center !important;' : ''}
       }
 
       /* Navigation Styling */
@@ -339,6 +364,62 @@ export const ThemeProvider = ({ children }) => {
       }
     });
 
+    // Add individual header button positioning and colors
+    try {
+      const individualPositions = JSON.parse(themeData.header_button_individual_positions || '{}');
+      const individualColors = JSON.parse(themeData.header_button_individual_colors || '{}');
+      
+      // Apply individual button positioning
+      Object.entries(individualPositions).forEach(([buttonKey, position]) => {
+        if (position && typeof position === 'object') {
+          const selector = buttonKey === 'dashboard' ? '.nav-link[href="/"]' :
+                          buttonKey === 'screens' ? '.nav-link[href="/screens"]' :
+                          buttonKey === 'admin' ? '.nav-link[href="/admin"]' :
+                          buttonKey === 'user-dropdown' ? '.user-dropdown-trigger' : null;
+          
+          if (selector) {
+            css += `
+              .header ${selector} {
+                ${position.marginTop ? `margin-top: ${position.marginTop} !important;` : ''}
+                ${position.marginRight ? `margin-right: ${position.marginRight} !important;` : ''}
+                ${position.marginBottom ? `margin-bottom: ${position.marginBottom} !important;` : ''}
+                ${position.marginLeft ? `margin-left: ${position.marginLeft} !important;` : ''}
+                ${position.alignSelf ? `align-self: ${position.alignSelf} !important;` : ''}
+                ${position.order ? `order: ${position.order} !important;` : ''}
+              }
+            `;
+          }
+        }
+      });
+      
+      // Apply individual button colors
+      Object.entries(individualColors).forEach(([buttonKey, colors]) => {
+        if (colors && typeof colors === 'object') {
+          const selector = buttonKey === 'dashboard' ? '.nav-link[href="/"]' :
+                          buttonKey === 'screens' ? '.nav-link[href="/screens"]' :
+                          buttonKey === 'admin' ? '.nav-link[href="/admin"]' :
+                          buttonKey === 'user-dropdown' ? '.user-dropdown-trigger' : null;
+          
+          if (selector) {
+            css += `
+              .header ${selector} {
+                ${colors.color ? `color: ${colors.color} !important;` : ''}
+                ${colors.backgroundColor ? `background-color: ${colors.backgroundColor} !important;` : ''}
+                ${colors.borderColor ? `border-color: ${colors.borderColor} !important;` : ''}
+              }
+              .header ${selector}:hover {
+                ${colors.hoverColor ? `color: ${colors.hoverColor} !important;` : ''}
+                ${colors.hoverBackgroundColor ? `background-color: ${colors.hoverBackgroundColor} !important;` : ''}
+                ${colors.hoverBorderColor ? `border-color: ${colors.hoverBorderColor} !important;` : ''}
+              }
+            `;
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Error parsing header button customization:', e);
+    }
+
     // Add custom button image styles
     Object.entries(customButtonImages).forEach(([buttonClass, imageUrl]) => {
       if (imageUrl) {
@@ -364,6 +445,11 @@ export const ThemeProvider = ({ children }) => {
     // Add custom CSS injection
     if (themeData.custom_css) {
       css += `\n/* Custom CSS */\n${themeData.custom_css}`;
+    }
+
+    // Add header-specific custom CSS injection
+    if (themeData.header_custom_css) {
+      css += `\n/* Header Custom CSS */\n${themeData.header_custom_css}`;
     }
 
     style.textContent = css;
