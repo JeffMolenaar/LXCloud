@@ -85,6 +85,9 @@ export const ThemeProvider = ({ children }) => {
     header_button_individual_colors: '{}',
     header_custom_css: '',
     
+    // Logo vertical alignment
+    logo_vertical_alignment: 'center',
+    
     // Card and component styling
     card_shadow: 'true',
     card_border: 'true',
@@ -166,8 +169,24 @@ export const ThemeProvider = ({ children }) => {
         ${themeData.header_sticky === 'true' ? 'position: sticky !important; top: 0 !important; z-index: 1000 !important;' : ''}
       }
 
+      .header .header-content {
+        height: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+        padding: 0 20px !important;
+      }
+
       .header .logo {
         color: ${themeData.header_text_color || '#ffffff'} !important;
+        display: flex !important;
+        align-items: ${themeData.logo_vertical_alignment === 'top' ? 'flex-start' :
+                     themeData.logo_vertical_alignment === 'bottom' ? 'flex-end' : 'center'} !important;
+        height: 100% !important;
+        font-size: 1.8rem !important;
+        font-weight: bold !important;
       }
 
       .user-dropdown-trigger {
@@ -183,9 +202,18 @@ export const ThemeProvider = ({ children }) => {
         align-items: ${themeData.header_button_vertical_alignment === 'top' ? 'flex-start' : 
                      themeData.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'} !important;
         gap: ${themeData.header_button_spacing || '15px'} !important;
+        display: flex !important;
+        height: 100% !important;
       }
 
       .header .nav-link {
+        ${themeData.header_button_vertical_alignment === 'top' ? 'align-self: flex-start !important;' : ''}
+        ${themeData.header_button_vertical_alignment === 'bottom' ? 'align-self: flex-end !important;' : ''}
+        ${themeData.header_button_vertical_alignment === 'center' ? 'align-self: center !important;' : ''}
+        color: ${themeData.header_text_color || '#ffffff'} !important;
+      }
+
+      .header .user-dropdown-container {
         ${themeData.header_button_vertical_alignment === 'top' ? 'align-self: flex-start !important;' : ''}
         ${themeData.header_button_vertical_alignment === 'bottom' ? 'align-self: flex-end !important;' : ''}
         ${themeData.header_button_vertical_alignment === 'center' ? 'align-self: center !important;' : ''}

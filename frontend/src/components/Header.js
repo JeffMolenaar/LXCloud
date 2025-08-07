@@ -29,11 +29,53 @@ const Header = () => {
     setShowUserDropdown(false);
   };
 
+  // Apply theme settings for proper header styling
+  const headerStyle = {
+    height: theme.header_height || '60px',
+    background: theme.header_color || '#667eea',
+    color: theme.header_text_color || '#ffffff',
+    boxShadow: theme.header_shadow === 'true' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none',
+    position: theme.header_sticky === 'true' ? 'sticky' : 'static',
+    top: theme.header_sticky === 'true' ? '0' : 'auto',
+    zIndex: theme.header_sticky === 'true' ? '1000' : 'auto'
+  };
+
+  const headerContentStyle = {
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: '0 20px'
+  };
+
+  const logoStyle = {
+    display: 'flex',
+    alignItems: theme.logo_vertical_alignment === 'top' ? 'flex-start' :
+                theme.logo_vertical_alignment === 'bottom' ? 'flex-end' : 'center',
+    fontSize: '1.8rem',
+    fontWeight: 'bold',
+    color: theme.header_text_color || '#ffffff'
+  };
+
+  const navLinksStyle = {
+    display: 'flex',
+    gap: theme.header_button_spacing || '15px',
+    justifyContent: theme.header_button_alignment === 'center' ? 'center' :
+                   theme.header_button_alignment === 'right' ? 'flex-end' :
+                   theme.header_button_alignment === 'left' ? 'flex-start' :
+                   theme.header_button_alignment === 'justify' ? 'space-between' : 'flex-end',
+    alignItems: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+               theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center',
+    height: '100%'
+  };
+
   if (!isAuthenticated) {
     return (
-      <header className="header">
-        <div className="header-content">
-          <div className="logo">
+      <header className="header" style={headerStyle}>
+        <div className="header-content" style={headerContentStyle}>
+          <div className="logo" style={logoStyle}>
             {settings.logoUrl ? (
               <img 
                 src={settings.logoUrl} 
@@ -41,14 +83,32 @@ const Header = () => {
                 style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
               />
             ) : (
-              settings.logoText
+              <span style={{ color: theme.header_text_color || '#ffffff' }}>
+                {settings.logoText}
+              </span>
             )}
           </div>
-          <nav className="nav-links">
-            <Link to="/login" className={`nav-link ${isActiveLink('/login')}`}>
+          <nav className="nav-links" style={navLinksStyle}>
+            <Link 
+              to="/login" 
+              className={`nav-link ${isActiveLink('/login')}`}
+              style={{ 
+                color: theme.header_text_color || '#ffffff',
+                alignSelf: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                         theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+              }}
+            >
               Login
             </Link>
-            <Link to="/register" className={`nav-link ${isActiveLink('/register')}`}>
+            <Link 
+              to="/register" 
+              className={`nav-link ${isActiveLink('/register')}`}
+              style={{ 
+                color: theme.header_text_color || '#ffffff',
+                alignSelf: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                         theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+              }}
+            >
               Register
             </Link>
           </nav>
@@ -58,42 +118,83 @@ const Header = () => {
   }
 
   return (
-    <header className="header">
-      <div className="header-content">
-        <div className="logo">
+    <header className="header" style={headerStyle}>
+      <div className="header-content" style={headerContentStyle}>
+        <div className="logo" style={logoStyle}>
           {(theme.logo_url || settings.logoUrl) ? (
             <img 
               src={theme.logo_url || settings.logoUrl} 
               alt={theme.app_name || settings.logoText} 
-              style={{ height: '40px', maxWidth: '200px', objectFit: 'contain' }}
+              style={{ 
+                height: '40px', 
+                maxWidth: '200px', 
+                objectFit: 'contain'
+              }}
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'inline';
               }}
             />
           ) : null}
-          <span style={{ display: (theme.logo_url || settings.logoUrl) ? 'none' : 'inline' }}>
+          <span style={{ 
+            display: (theme.logo_url || settings.logoUrl) ? 'none' : 'inline',
+            color: theme.header_text_color || '#ffffff'
+          }}>
             {theme.app_name || settings.logoText}
           </span>
         </div>
-        <nav className="nav-links">
-          <Link to="/" className={`nav-link ${isActiveLink('/')}`}>
+        <nav className="nav-links" style={navLinksStyle}>
+          <Link 
+            to="/" 
+            className={`nav-link ${isActiveLink('/')}`}
+            style={{ 
+              color: theme.header_text_color || '#ffffff',
+              alignSelf: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                       theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+            }}
+          >
             Dashboard
           </Link>
-          <Link to="/screens" className={`nav-link ${isActiveLink('/screens')}`}>
+          <Link 
+            to="/screens" 
+            className={`nav-link ${isActiveLink('/screens')}`}
+            style={{ 
+              color: theme.header_text_color || '#ffffff',
+              alignSelf: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                       theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+            }}
+          >
             Manage Screens
           </Link>
           {(user?.is_admin || user?.is_administrator) && (
-            <Link to="/admin" className={`nav-link ${isActiveLink('/admin')}`}>
+            <Link 
+              to="/admin" 
+              className={`nav-link ${isActiveLink('/admin')}`}
+              style={{ 
+                color: theme.header_text_color || '#ffffff',
+                alignSelf: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                         theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+              }}
+            >
               Admin Panel
             </Link>
           )}
           
-          <div className="user-dropdown-container">
+          <div 
+            className="user-dropdown-container"
+            style={{
+              alignSelf: theme.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                       theme.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+            }}
+          >
             <span 
               className="nav-link user-dropdown-trigger" 
               onClick={toggleUserDropdown}
-              style={{ cursor: 'pointer', position: 'relative' }}
+              style={{ 
+                cursor: 'pointer', 
+                position: 'relative',
+                color: theme.header_text_color || '#ffffff'
+              }}
             >
               Welcome, {user?.username} {user?.is_admin && '(Admin)'} {user?.is_administrator && '(Administrator)'} ▼
             </span>

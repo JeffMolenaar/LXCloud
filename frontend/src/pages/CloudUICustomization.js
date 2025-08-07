@@ -85,6 +85,9 @@ const CloudUICustomization = () => {
     header_button_individual_colors: '{}',
     header_custom_css: '',
     
+    // Logo vertical alignment
+    logo_vertical_alignment: 'center',
+    
     // Card and component styling
     card_shadow: 'true',
     card_border: 'true',
@@ -453,6 +456,9 @@ const CloudUICustomization = () => {
         header_button_individual_colors: '{}',
         header_custom_css: '',
         
+        // Logo vertical alignment
+        logo_vertical_alignment: 'center',
+        
         // Card and component styling
         card_shadow: 'true',
         card_border: 'true',
@@ -702,15 +708,26 @@ const CloudUICustomization = () => {
             <div style={{ 
               background: uiSettings.header_color || '#667eea', 
               color: uiSettings.header_text_color || '#ffffff', 
-              padding: '15px', 
+              padding: '0', 
               borderRadius: '8px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               height: (uiSettings.header_height || '60px').replace('px', '') + 'px',
-              boxShadow: uiSettings.header_shadow === 'true' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none'
+              boxShadow: uiSettings.header_shadow === 'true' ? '0 2px 10px rgba(0,0,0,0.1)' : 'none',
+              maxWidth: '1200px',
+              margin: '0 auto',
+              paddingLeft: '20px',
+              paddingRight: '20px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: uiSettings.logo_vertical_alignment === 'top' ? 'flex-start' :
+                          uiSettings.logo_vertical_alignment === 'bottom' ? 'flex-end' : 'center',
+                height: '100%',
+                fontSize: '1.8rem',
+                fontWeight: 'bold'
+              }}>
                 {(uiSettings.logo_url || adminSettings.logoUrl) ? (
                   <img 
                     src={uiSettings.logo_url || adminSettings.logoUrl} 
@@ -723,8 +740,6 @@ const CloudUICustomization = () => {
                   />
                 ) : null}
                 <span style={{ 
-                  fontSize: '1.5rem', 
-                  fontWeight: 'bold',
                   color: uiSettings.header_text_color || '#ffffff',
                   display: (uiSettings.logo_url || adminSettings.logoUrl) ? 'none' : 'inline'
                 }}>
@@ -736,43 +751,53 @@ const CloudUICustomization = () => {
                 gap: uiSettings.header_button_spacing || '15px',
                 justifyContent: uiSettings.header_button_alignment === 'center' ? 'center' :
                              uiSettings.header_button_alignment === 'right' ? 'flex-end' :
-                             uiSettings.header_button_alignment === 'left' ? 'flex-start' : 'flex-end',
+                             uiSettings.header_button_alignment === 'left' ? 'flex-start' :
+                             uiSettings.header_button_alignment === 'justify' ? 'space-between' : 'flex-end',
                 alignItems: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' :
-                          uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+                          uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center',
+                height: '100%'
               }}>
                 <span style={{ 
                   color: uiSettings.header_text_color || '#ffffff',
                   padding: '8px 16px',
                   borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
                   background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none',
+                  alignSelf: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                           uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
                 }}>Dashboard</span>
                 <span style={{ 
                   color: uiSettings.header_text_color || '#ffffff',
                   padding: '8px 16px',
                   borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
                   background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none',
+                  alignSelf: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                           uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
                 }}>Manage Screens</span>
                 <span style={{ 
                   color: uiSettings.header_text_color || '#ffffff',
                   padding: '8px 16px',
                   borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
                   background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none',
+                  alignSelf: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                           uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
                 }}>Admin Panel</span>
                 <span style={{ 
                   color: uiSettings.header_text_color || '#ffffff',
                   padding: '8px 16px',
                   borderRadius: uiSettings.nav_style === 'pills' ? '20px' : '4px',
                   background: uiSettings.nav_style === 'pills' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none'
+                  borderBottom: uiSettings.nav_style === 'underline' ? '2px solid transparent' : 'none',
+                  alignSelf: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' :
+                           uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
                 }}>Welcome, User ▼</span>
               </div>
             </div>
             <small style={{ color: '#666', marginTop: '10px', display: 'block' }}>
               ⬆️ This preview shows how your header will look with the current settings. 
-              The actual header should match this preview exactly.
+              The actual header should match this preview exactly after saving settings.
             </small>
           </div>
 
@@ -787,6 +812,22 @@ const CloudUICustomization = () => {
                 
                 {/* Global Header Button Settings */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Logo Vertical Alignment</label>
+                    <select
+                      className="form-input"
+                      value={uiSettings.logo_vertical_alignment}
+                      onChange={(e) => handleInputChange('logo_vertical_alignment', e.target.value)}
+                    >
+                      <option value="center">Center</option>
+                      <option value="top">Top</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                    <small style={{ color: '#666' }}>
+                      Vertical alignment of the logo within the header
+                    </small>
+                  </div>
+
                   <div className="form-group">
                     <label className="form-label">Button Alignment</label>
                     <select
