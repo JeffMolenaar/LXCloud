@@ -2008,6 +2008,10 @@ def get_ui_settings():
             'border_radius': '8px',
             'spacing_unit': '16px',
             
+            # Per-page custom CSS
+            'dashboard_custom_css': '',
+            'manage_screens_custom_css': '',
+            
             # Accessibility settings
             'high_contrast': 'false',
             'large_text': 'false',
@@ -2089,6 +2093,9 @@ def update_ui_settings():
             
             # Advanced customization
             'custom_css', 'theme_mode', 'border_radius', 'spacing_unit',
+            
+            # Per-page custom CSS
+            'dashboard_custom_css', 'manage_screens_custom_css',
             
             # Accessibility settings
             'high_contrast', 'large_text', 'reduced_motion',

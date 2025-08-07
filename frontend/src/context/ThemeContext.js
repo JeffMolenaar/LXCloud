@@ -67,6 +67,10 @@ export const ThemeProvider = ({ children }) => {
     border_radius: '8px',
     spacing_unit: '16px',
     
+    // Per-page custom CSS
+    dashboard_custom_css: '',
+    manage_screens_custom_css: '',
+    
     // Accessibility settings
     high_contrast: 'false',
     large_text: 'false',
@@ -494,6 +498,36 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  // Function to apply page-specific CSS
+  const applyPageCSS = (pageName, themeData = theme) => {
+    // Remove existing page-specific styles
+    const existingPageStyle = document.getElementById('dynamic-page-styles');
+    if (existingPageStyle) {
+      existingPageStyle.remove();
+    }
+
+    // Get the CSS for the current page
+    let pageCSS = '';
+    switch (pageName) {
+      case 'dashboard':
+        pageCSS = themeData.dashboard_custom_css || '';
+        break;
+      case 'manage-screens':
+        pageCSS = themeData.manage_screens_custom_css || '';
+        break;
+      default:
+        return; // No page-specific CSS for this page
+    }
+
+    // If there's page-specific CSS, inject it
+    if (pageCSS.trim()) {
+      const pageStyle = document.createElement('style');
+      pageStyle.id = 'dynamic-page-styles';
+      pageStyle.textContent = `\n/* Page-specific CSS for ${pageName} */\n${pageCSS}`;
+      document.head.appendChild(pageStyle);
+    }
+  };
+
   // Helper function to update favicon
   const updateFavicon = (faviconUrl) => {
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
@@ -533,7 +567,8 @@ export const ThemeProvider = ({ children }) => {
     updateTheme,
     loading,
     reload: loadTheme,
-    applyTheme
+    applyTheme,
+    applyPageCSS
   };
 
   return (
