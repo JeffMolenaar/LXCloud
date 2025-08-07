@@ -33,6 +33,19 @@ const api = {
   toggleUserAdmin: (userId) => axios.post(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_TOGGLE_USER(userId)}`),
   getAdminSettings: () => axios.get(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_SETTINGS}`),
   updateAdminSettings: (settings) => axios.post(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_UPDATE_SETTINGS}`, settings),
+  
+  // Settings methods (aliases for admin settings for SettingsContext compatibility)
+  getSettings: () => axios.get(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_SETTINGS}`),
+  updateSettings: (settings) => axios.post(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_UPDATE_SETTINGS}`, settings),
+  
+  // UI Settings endpoints
+  getUISettings: () => axios.get(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_UI_SETTINGS}`),
+  updateUISettings: (settings) => axios.post(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_UI_SETTINGS}`, settings),
+  uploadUIAsset: (formData) => axios.post(`${API_BASE_URL}${API_ENDPOINTS.ADMIN_UPLOAD_UI_ASSET}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
 
   // System endpoints
   getHealth: () => axios.get(`${API_BASE_URL}${API_ENDPOINTS.HEALTH}`),
