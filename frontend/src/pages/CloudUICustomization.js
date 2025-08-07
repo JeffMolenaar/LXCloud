@@ -76,6 +76,14 @@ const CloudUICustomization = () => {
     header_shadow: 'true',
     header_sticky: 'true',
     
+    // Header button customization
+    header_button_alignment: 'default',
+    header_button_vertical_alignment: 'center',
+    header_button_spacing: '15px',
+    header_button_individual_positions: '{}',
+    header_button_individual_colors: '{}',
+    header_custom_css: '',
+    
     // Card and component styling
     card_shadow: 'true',
     card_border: 'true',
@@ -106,6 +114,8 @@ const CloudUICustomization = () => {
   const [footerLinks, setFooterLinks] = useState({});
   const [customTextLabels, setCustomTextLabels] = useState({});
   const [pageTitles, setPageTitles] = useState({});
+  const [headerButtonPositions, setHeaderButtonPositions] = useState({});
+  const [headerButtonColors, setHeaderButtonColors] = useState({});
 
   useEffect(() => {
     if (!user?.is_admin && !user?.is_administrator) {
@@ -161,6 +171,24 @@ const CloudUICustomization = () => {
       } catch (e) {
         console.error('Error parsing page titles:', e);
         setPageTitles({});
+      }
+      
+      // Parse header button positions
+      try {
+        const headerPositions = JSON.parse(loadedSettings.header_button_individual_positions || '{}');
+        setHeaderButtonPositions(headerPositions);
+      } catch (e) {
+        console.error('Error parsing header button positions:', e);
+        setHeaderButtonPositions({});
+      }
+      
+      // Parse header button colors
+      try {
+        const headerColors = JSON.parse(loadedSettings.header_button_individual_colors || '{}');
+        setHeaderButtonColors(headerColors);
+      } catch (e) {
+        console.error('Error parsing header button colors:', e);
+        setHeaderButtonColors({});
       }
       
       // Sync with admin settings for super admins
@@ -406,6 +434,14 @@ const CloudUICustomization = () => {
         header_shadow: 'true',
         header_sticky: 'true',
         
+        // Header button customization
+        header_button_alignment: 'default',
+        header_button_vertical_alignment: 'center',
+        header_button_spacing: '15px',
+        header_button_individual_positions: '{}',
+        header_button_individual_colors: '{}',
+        header_custom_css: '',
+        
         // Card and component styling
         card_shadow: 'true',
         card_border: 'true',
@@ -422,6 +458,8 @@ const CloudUICustomization = () => {
       setFooterLinks({});
       setCustomTextLabels({});
       setPageTitles({});
+      setHeaderButtonPositions({});
+      setHeaderButtonColors({});
       
       if (user?.is_admin) {
         setAdminSettings({
@@ -1466,6 +1504,481 @@ const CloudUICustomization = () => {
           </div>
         </div>
       </div>
+
+      {/* Header Button Customization (Super Admin) */}
+      {user?.is_admin && (
+        <div className="card">
+          <h2>Header Button Customization (Super Admin)</h2>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            Advanced controls for positioning and styling header navigation buttons. Only super administrators can modify these settings.
+          </p>
+          
+          {/* Global Header Button Settings */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+            <div className="form-group">
+              <label className="form-label">Button Alignment</label>
+              <select
+                className="form-input"
+                value={uiSettings.header_button_alignment}
+                onChange={(e) => handleInputChange('header_button_alignment', e.target.value)}
+              >
+                <option value="default">Default</option>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+                <option value="justify">Justify (Space Between)</option>
+              </select>
+              <small style={{ color: '#666' }}>
+                Horizontal alignment of header navigation buttons
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Vertical Alignment</label>
+              <select
+                className="form-input"
+                value={uiSettings.header_button_vertical_alignment}
+                onChange={(e) => handleInputChange('header_button_vertical_alignment', e.target.value)}
+              >
+                <option value="center">Center</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+              </select>
+              <small style={{ color: '#666' }}>
+                Vertical alignment of header navigation buttons
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Button Spacing</label>
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.header_button_spacing}
+                onChange={(e) => handleInputChange('header_button_spacing', e.target.value)}
+                placeholder="15px"
+              />
+              <small style={{ color: '#666' }}>
+                Gap between header navigation buttons (e.g., 15px, 1rem)
+              </small>
+            </div>
+          </div>
+
+          {/* Individual Button Customization */}
+          <div className="form-group" style={{ marginTop: '30px' }}>
+            <h3>Individual Button Customization</h3>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Customize positioning and colors for each header button individually.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+              {[
+                { key: 'dashboard', label: 'Dashboard Button', path: '/' },
+                { key: 'screens', label: 'Manage Screens Button', path: '/screens' },
+                { key: 'admin', label: 'Admin Panel Button', path: '/admin' },
+                { key: 'user-dropdown', label: 'User Dropdown', path: null }
+              ].map((button) => (
+                <div key={button.key} className="form-group" style={{ border: '1px solid #e5e7eb', padding: '20px', borderRadius: '8px' }}>
+                  <h4 style={{ marginBottom: '15px', color: '#333' }}>{button.label}</h4>
+                  
+                  {/* Position Settings */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <h5 style={{ marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>Position</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Top</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={headerButtonPositions[button.key]?.marginTop || ''}
+                          onChange={(e) => {
+                            const updatedPositions = {
+                              ...headerButtonPositions,
+                              [button.key]: {
+                                ...headerButtonPositions[button.key],
+                                marginTop: e.target.value
+                              }
+                            };
+                            setHeaderButtonPositions(updatedPositions);
+                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
+                          }}
+                          placeholder="0px"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Right</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={headerButtonPositions[button.key]?.marginRight || ''}
+                          onChange={(e) => {
+                            const updatedPositions = {
+                              ...headerButtonPositions,
+                              [button.key]: {
+                                ...headerButtonPositions[button.key],
+                                marginRight: e.target.value
+                              }
+                            };
+                            setHeaderButtonPositions(updatedPositions);
+                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
+                          }}
+                          placeholder="0px"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Bottom</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={headerButtonPositions[button.key]?.marginBottom || ''}
+                          onChange={(e) => {
+                            const updatedPositions = {
+                              ...headerButtonPositions,
+                              [button.key]: {
+                                ...headerButtonPositions[button.key],
+                                marginBottom: e.target.value
+                              }
+                            };
+                            setHeaderButtonPositions(updatedPositions);
+                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
+                          }}
+                          placeholder="0px"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Margin Left</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={headerButtonPositions[button.key]?.marginLeft || ''}
+                          onChange={(e) => {
+                            const updatedPositions = {
+                              ...headerButtonPositions,
+                              [button.key]: {
+                                ...headerButtonPositions[button.key],
+                                marginLeft: e.target.value
+                              }
+                            };
+                            setHeaderButtonPositions(updatedPositions);
+                            handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
+                          }}
+                          placeholder="0px"
+                        />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '10px' }}>
+                      <label className="form-label" style={{ fontSize: '12px' }}>Display Order</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={headerButtonPositions[button.key]?.order || ''}
+                        onChange={(e) => {
+                          const updatedPositions = {
+                            ...headerButtonPositions,
+                            [button.key]: {
+                              ...headerButtonPositions[button.key],
+                              order: e.target.value
+                            }
+                          };
+                          setHeaderButtonPositions(updatedPositions);
+                          handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
+                        }}
+                        placeholder="0"
+                      />
+                      <small style={{ color: '#666', fontSize: '11px' }}>
+                        Lower numbers appear first
+                      </small>
+                    </div>
+                  </div>
+
+                  {/* Color Settings */}
+                  <div>
+                    <h5 style={{ marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>Colors</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Text Color</label>
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={headerButtonColors[button.key]?.color || '#ffffff'}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  color: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
+                          />
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={headerButtonColors[button.key]?.color || ''}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  color: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            placeholder="#ffffff"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Hover Color</label>
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={headerButtonColors[button.key]?.hoverColor || '#cccccc'}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  hoverColor: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
+                          />
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={headerButtonColors[button.key]?.hoverColor || ''}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  hoverColor: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            placeholder="#cccccc"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Background Color</label>
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={headerButtonColors[button.key]?.backgroundColor || '#transparent'}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  backgroundColor: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
+                          />
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={headerButtonColors[button.key]?.backgroundColor || ''}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  backgroundColor: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            placeholder="transparent"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '12px' }}>Hover Background</label>
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={headerButtonColors[button.key]?.hoverBackgroundColor || 'rgba(255,255,255,0.2)'}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  hoverBackgroundColor: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            style={{ width: '30px', height: '30px', border: 'none', borderRadius: '4px' }}
+                          />
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={headerButtonColors[button.key]?.hoverBackgroundColor || ''}
+                            onChange={(e) => {
+                              const updatedColors = {
+                                ...headerButtonColors,
+                                [button.key]: {
+                                  ...headerButtonColors[button.key],
+                                  hoverBackgroundColor: e.target.value
+                                }
+                              };
+                              setHeaderButtonColors(updatedColors);
+                              handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                            }}
+                            placeholder="rgba(255,255,255,0.2)"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Clear Button */}
+                  <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      className="button button-small button-secondary"
+                      onClick={() => {
+                        const updatedPositions = { ...headerButtonPositions };
+                        const updatedColors = { ...headerButtonColors };
+                        delete updatedPositions[button.key];
+                        delete updatedColors[button.key];
+                        setHeaderButtonPositions(updatedPositions);
+                        setHeaderButtonColors(updatedColors);
+                        handleInputChange('header_button_individual_positions', JSON.stringify(updatedPositions));
+                        handleInputChange('header_button_individual_colors', JSON.stringify(updatedColors));
+                      }}
+                    >
+                      Reset {button.label}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Header Custom CSS */}
+          <div className="form-group" style={{ marginTop: '30px' }}>
+            <label className="form-label">Header Custom CSS</label>
+            <textarea
+              className="form-input"
+              value={uiSettings.header_custom_css}
+              onChange={(e) => handleInputChange('header_custom_css', e.target.value)}
+              placeholder="/* Add custom CSS specifically for header styling */
+.header .nav-link {
+  /* Your custom header button styles */
+}
+
+.header .logo {
+  /* Your custom logo styles */
+}"
+              rows="8"
+              style={{ fontFamily: 'monospace', fontSize: '14px' }}
+            />
+            <small style={{ color: '#666' }}>
+              Add custom CSS specifically for header customization. This CSS will be applied after all other header styles.
+            </small>
+          </div>
+
+          {/* Preview */}
+          <div className="form-group" style={{ marginTop: '30px' }}>
+            <h4>Header Preview</h4>
+            <div style={{ 
+              background: uiSettings.header_color || '#667eea',
+              color: uiSettings.header_text_color || '#ffffff',
+              padding: '15px',
+              borderRadius: '8px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' : 
+                         uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+            }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                {uiSettings.app_name || 'LXCloud'}
+              </div>
+              <div style={{ 
+                display: 'flex',
+                gap: uiSettings.header_button_spacing || '15px',
+                justifyContent: uiSettings.header_button_alignment === 'center' ? 'center' :
+                              uiSettings.header_button_alignment === 'right' ? 'flex-end' :
+                              uiSettings.header_button_alignment === 'justify' ? 'space-between' : 'flex-start',
+                alignItems: uiSettings.header_button_vertical_alignment === 'top' ? 'flex-start' : 
+                           uiSettings.header_button_vertical_alignment === 'bottom' ? 'flex-end' : 'center'
+              }}>
+                <span style={{ 
+                  color: headerButtonColors.dashboard?.color || uiSettings.header_text_color || '#ffffff',
+                  backgroundColor: headerButtonColors.dashboard?.backgroundColor || 'transparent',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  ...(headerButtonPositions.dashboard?.marginTop && { marginTop: headerButtonPositions.dashboard.marginTop }),
+                  ...(headerButtonPositions.dashboard?.marginLeft && { marginLeft: headerButtonPositions.dashboard.marginLeft }),
+                  ...(headerButtonPositions.dashboard?.marginRight && { marginRight: headerButtonPositions.dashboard.marginRight }),
+                  ...(headerButtonPositions.dashboard?.marginBottom && { marginBottom: headerButtonPositions.dashboard.marginBottom })
+                }}>
+                  Dashboard
+                </span>
+                <span style={{ 
+                  color: headerButtonColors.screens?.color || uiSettings.header_text_color || '#ffffff',
+                  backgroundColor: headerButtonColors.screens?.backgroundColor || 'transparent',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  ...(headerButtonPositions.screens?.marginTop && { marginTop: headerButtonPositions.screens.marginTop }),
+                  ...(headerButtonPositions.screens?.marginLeft && { marginLeft: headerButtonPositions.screens.marginLeft }),
+                  ...(headerButtonPositions.screens?.marginRight && { marginRight: headerButtonPositions.screens.marginRight }),
+                  ...(headerButtonPositions.screens?.marginBottom && { marginBottom: headerButtonPositions.screens.marginBottom })
+                }}>
+                  Manage Screens
+                </span>
+                <span style={{ 
+                  color: headerButtonColors.admin?.color || uiSettings.header_text_color || '#ffffff',
+                  backgroundColor: headerButtonColors.admin?.backgroundColor || 'transparent',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  ...(headerButtonPositions.admin?.marginTop && { marginTop: headerButtonPositions.admin.marginTop }),
+                  ...(headerButtonPositions.admin?.marginLeft && { marginLeft: headerButtonPositions.admin.marginLeft }),
+                  ...(headerButtonPositions.admin?.marginRight && { marginRight: headerButtonPositions.admin.marginRight }),
+                  ...(headerButtonPositions.admin?.marginBottom && { marginBottom: headerButtonPositions.admin.marginBottom })
+                }}>
+                  Admin Panel
+                </span>
+                <span style={{ 
+                  color: headerButtonColors['user-dropdown']?.color || uiSettings.header_text_color || '#ffffff',
+                  backgroundColor: headerButtonColors['user-dropdown']?.backgroundColor || 'transparent',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  ...(headerButtonPositions['user-dropdown']?.marginTop && { marginTop: headerButtonPositions['user-dropdown'].marginTop }),
+                  ...(headerButtonPositions['user-dropdown']?.marginLeft && { marginLeft: headerButtonPositions['user-dropdown'].marginLeft }),
+                  ...(headerButtonPositions['user-dropdown']?.marginRight && { marginRight: headerButtonPositions['user-dropdown'].marginRight }),
+                  ...(headerButtonPositions['user-dropdown']?.marginBottom && { marginBottom: headerButtonPositions['user-dropdown'].marginBottom })
+                }}>
+                  Welcome, Admin ▼
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Theme and Layout Settings */}
       <div className="card">

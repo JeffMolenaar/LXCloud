@@ -421,6 +421,30 @@ def run_database_migrations():
                 set_database_version(5)
                 print("Migration to version 5 completed")
             
+            # Migration from version 5 to 6 (add header button customization)
+            if current_version < 6:
+                print("Adding header button customization settings...")
+                
+                # Add new header button customization settings
+                header_button_settings = [
+                    # Header button positioning and styling
+                    ('header_button_alignment', 'default'),
+                    ('header_button_vertical_alignment', 'center'),
+                    ('header_button_spacing', '15px'),
+                    ('header_button_individual_positions', '{}'),
+                    ('header_button_individual_colors', '{}'),
+                    ('header_custom_css', ''),
+                ]
+                
+                for key, value in header_button_settings:
+                    cursor.execute("""
+                        INSERT IGNORE INTO ui_settings (setting_key, setting_value)
+                        VALUES (%s, %s)
+                    """, (key, value))
+                
+                set_database_version(6)
+                print("Migration to version 6 completed")
+            
             conn.commit()
             print("All database migrations completed successfully")
         else:
@@ -1994,6 +2018,14 @@ def get_ui_settings():
             'header_shadow': 'true',
             'header_sticky': 'true',
             
+            # Header button customization
+            'header_button_alignment': 'default',
+            'header_button_vertical_alignment': 'center',
+            'header_button_spacing': '15px',
+            'header_button_individual_positions': '{}',
+            'header_button_individual_colors': '{}',
+            'header_custom_css': '',
+            
             # Card and component styling
             'card_shadow': 'true',
             'card_border': 'true',
@@ -2063,6 +2095,10 @@ def update_ui_settings():
             
             # Advanced header settings
             'header_height', 'header_shadow', 'header_sticky',
+            
+            # Header button customization
+            'header_button_alignment', 'header_button_vertical_alignment', 'header_button_spacing',
+            'header_button_individual_positions', 'header_button_individual_colors', 'header_custom_css',
             
             # Card and component styling
             'card_shadow', 'card_border', 'card_hover_effect'
