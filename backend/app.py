@@ -343,6 +343,78 @@ def run_database_migrations():
                 set_database_version(4)
                 print("Migration to version 4 completed")
             
+            # Migration from version 4 to 5 (add extended UI customization for v1.3)
+            if current_version < 5:
+                print("Adding extended UI customization settings for version 1.3...")
+                
+                # Add new UI settings for v1.3
+                extended_ui_settings = [
+                    # Footer customization
+                    ('footer_enabled', 'true'),
+                    ('footer_text', 'Powered by LXCloud'),
+                    ('footer_color', '#f8f9fa'),
+                    ('footer_text_color', '#6c757d'),
+                    ('footer_links', '{}'),  # JSON for custom footer links
+                    
+                    # Typography settings
+                    ('font_family', 'system-ui, -apple-system, sans-serif'),
+                    ('font_size_base', '16px'),
+                    ('font_size_heading', '24px'),
+                    ('line_height', '1.5'),
+                    
+                    # Navigation customization
+                    ('nav_style', 'default'),  # default, pills, underline
+                    ('nav_position', 'top'),   # top, side
+                    ('nav_color', '#667eea'),
+                    ('nav_hover_color', '#5a6fd8'),
+                    
+                    # Advanced button customization
+                    ('button_style', 'default'),  # default, rounded, square, outline
+                    ('button_size', 'medium'),     # small, medium, large
+                    ('button_shadow', 'true'),
+                    ('button_animation', 'true'),
+                    
+                    # Page-specific settings
+                    ('dashboard_layout', 'grid'),     # grid, list, cards
+                    ('dashboard_theme', 'default'),   # default, dark, light
+                    ('login_background_url', ''),
+                    ('login_style', 'default'),       # default, centered, split
+                    
+                    # Custom text overrides (JSON)
+                    ('custom_text_labels', '{}'),     # Custom text for UI labels
+                    ('page_titles', '{}'),            # Custom page titles
+                    
+                    # Advanced customization
+                    ('custom_css', ''),               # Custom CSS injection
+                    ('theme_mode', 'light'),          # light, dark, auto
+                    ('border_radius', '8px'),         # Global border radius
+                    ('spacing_unit', '16px'),         # Base spacing unit
+                    
+                    # Accessibility settings
+                    ('high_contrast', 'false'),
+                    ('large_text', 'false'),
+                    ('reduced_motion', 'false'),
+                    
+                    # Advanced header settings
+                    ('header_height', '60px'),
+                    ('header_shadow', 'true'),
+                    ('header_sticky', 'true'),
+                    
+                    # Card and component styling
+                    ('card_shadow', 'true'),
+                    ('card_border', 'true'),
+                    ('card_hover_effect', 'true'),
+                ]
+                
+                for key, value in extended_ui_settings:
+                    cursor.execute("""
+                        INSERT IGNORE INTO ui_settings (setting_key, setting_value)
+                        VALUES (%s, %s)
+                    """, (key, value))
+                
+                set_database_version(5)
+                print("Migration to version 5 completed")
+            
             conn.commit()
             print("All database migrations completed successfully")
         else:
@@ -1847,6 +1919,7 @@ def get_ui_settings():
         
         # Return default values if no settings exist
         default_settings = {
+            # Original settings
             'app_name': 'LXCloud',
             'primary_color': '#667eea',
             'secondary_color': '#f093fb',
@@ -1856,7 +1929,63 @@ def get_ui_settings():
             'logo_url': '',
             'favicon_url': '',
             'background_image_url': '',
-            'custom_button_images': '{}'
+            'custom_button_images': '{}',
+            
+            # Footer customization
+            'footer_enabled': 'true',
+            'footer_text': 'Powered by LXCloud',
+            'footer_color': '#f8f9fa',
+            'footer_text_color': '#6c757d',
+            'footer_links': '{}',
+            
+            # Typography settings
+            'font_family': 'system-ui, -apple-system, sans-serif',
+            'font_size_base': '16px',
+            'font_size_heading': '24px',
+            'line_height': '1.5',
+            
+            # Navigation customization
+            'nav_style': 'default',
+            'nav_position': 'top',
+            'nav_color': '#667eea',
+            'nav_hover_color': '#5a6fd8',
+            
+            # Advanced button customization
+            'button_style': 'default',
+            'button_size': 'medium',
+            'button_shadow': 'true',
+            'button_animation': 'true',
+            
+            # Page-specific settings
+            'dashboard_layout': 'grid',
+            'dashboard_theme': 'default',
+            'login_background_url': '',
+            'login_style': 'default',
+            
+            # Custom text overrides
+            'custom_text_labels': '{}',
+            'page_titles': '{}',
+            
+            # Advanced customization
+            'custom_css': '',
+            'theme_mode': 'light',
+            'border_radius': '8px',
+            'spacing_unit': '16px',
+            
+            # Accessibility settings
+            'high_contrast': 'false',
+            'large_text': 'false',
+            'reduced_motion': 'false',
+            
+            # Advanced header settings
+            'header_height': '60px',
+            'header_shadow': 'true',
+            'header_sticky': 'true',
+            
+            # Card and component styling
+            'card_shadow': 'true',
+            'card_border': 'true',
+            'card_hover_effect': 'true'
         }
         
         # Merge defaults with saved settings
@@ -1888,7 +2017,41 @@ def update_ui_settings():
     
     try:
         # Update or insert each setting
-        allowed_settings = ['app_name', 'primary_color', 'secondary_color', 'header_color', 'button_color', 'button_hover_color', 'logo_url', 'favicon_url', 'background_image_url', 'custom_button_images']
+        allowed_settings = [
+            # Original settings
+            'app_name', 'primary_color', 'secondary_color', 'header_color', 'button_color', 
+            'button_hover_color', 'logo_url', 'favicon_url', 'background_image_url', 'custom_button_images',
+            
+            # Footer customization
+            'footer_enabled', 'footer_text', 'footer_color', 'footer_text_color', 'footer_links',
+            
+            # Typography settings
+            'font_family', 'font_size_base', 'font_size_heading', 'line_height',
+            
+            # Navigation customization
+            'nav_style', 'nav_position', 'nav_color', 'nav_hover_color',
+            
+            # Advanced button customization
+            'button_style', 'button_size', 'button_shadow', 'button_animation',
+            
+            # Page-specific settings
+            'dashboard_layout', 'dashboard_theme', 'login_background_url', 'login_style',
+            
+            # Custom text overrides
+            'custom_text_labels', 'page_titles',
+            
+            # Advanced customization
+            'custom_css', 'theme_mode', 'border_radius', 'spacing_unit',
+            
+            # Accessibility settings
+            'high_contrast', 'large_text', 'reduced_motion',
+            
+            # Advanced header settings
+            'header_height', 'header_shadow', 'header_sticky',
+            
+            # Card and component styling
+            'card_shadow', 'card_border', 'card_hover_effect'
+        ]
         
         for key, value in data.items():
             if key in allowed_settings:

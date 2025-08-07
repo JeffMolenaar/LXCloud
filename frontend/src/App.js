@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -77,9 +78,10 @@ function App() {
       <SettingsProvider>
         <ThemeProvider>
           <Router>
-            <div className="App">
+            <div className="App" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
               <Header />
-              <Routes>
+              <main style={{ flex: 1 }}>
+                <Routes>
               <Route 
                 path="/login" 
                 element={
@@ -161,7 +163,9 @@ function App() {
                 } 
               />
             </Routes>
-          </div>
+              </main>
+              <Footer />
+            </div>
         </Router>
       </ThemeProvider>
     </SettingsProvider>
