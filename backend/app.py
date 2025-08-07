@@ -331,7 +331,12 @@ def run_database_migrations():
                     ('logo_url', ''),
                     ('favicon_url', ''),
                     ('background_image_url', ''),
-                    ('custom_button_images', '{}')
+                    ('custom_button_images', '{}'),
+                    
+                    # Screen management button icons
+                    ('screen_view_data_icon', ''),
+                    ('screen_edit_icon', ''),
+                    ('screen_unbind_icon', ''),
                 ]
                 
                 for key, value in default_ui_settings:
@@ -367,6 +372,7 @@ def run_database_migrations():
                     ('nav_position', 'top'),   # top, side
                     ('nav_color', '#667eea'),
                     ('nav_hover_color', '#5a6fd8'),
+                    ('header_text_color', '#ffffff'),  # header menu text color
                     
                     # Advanced button customization
                     ('button_style', 'default'),  # default, rounded, square, outline
@@ -1931,6 +1937,11 @@ def get_ui_settings():
             'background_image_url': '',
             'custom_button_images': '{}',
             
+            # Screen management button icons
+            'screen_view_data_icon': '',
+            'screen_edit_icon': '',
+            'screen_unbind_icon': '',
+            
             # Footer customization
             'footer_enabled': 'true',
             'footer_text': 'Powered by LXCloud',
@@ -1949,6 +1960,7 @@ def get_ui_settings():
             'nav_position': 'top',
             'nav_color': '#667eea',
             'nav_hover_color': '#5a6fd8',
+            'header_text_color': '#ffffff',
             
             # Advanced button customization
             'button_style': 'default',
@@ -2022,6 +2034,9 @@ def update_ui_settings():
             'app_name', 'primary_color', 'secondary_color', 'header_color', 'button_color', 
             'button_hover_color', 'logo_url', 'favicon_url', 'background_image_url', 'custom_button_images',
             
+            # Screen management button icons
+            'screen_view_data_icon', 'screen_edit_icon', 'screen_unbind_icon',
+            
             # Footer customization
             'footer_enabled', 'footer_text', 'footer_color', 'footer_text_color', 'footer_links',
             
@@ -2029,7 +2044,7 @@ def update_ui_settings():
             'font_family', 'font_size_base', 'font_size_heading', 'line_height',
             
             # Navigation customization
-            'nav_style', 'nav_position', 'nav_color', 'nav_hover_color',
+            'nav_style', 'nav_position', 'nav_color', 'nav_hover_color', 'header_text_color',
             
             # Advanced button customization
             'button_style', 'button_size', 'button_shadow', 'button_animation',

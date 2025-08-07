@@ -42,6 +42,7 @@ const CloudUICustomization = () => {
     nav_position: 'top',
     nav_color: '#667eea',
     nav_hover_color: '#5a6fd8',
+    header_text_color: '#ffffff',
     
     // Advanced button customization
     button_style: 'default',
@@ -78,7 +79,12 @@ const CloudUICustomization = () => {
     // Card and component styling
     card_shadow: 'true',
     card_border: 'true',
-    card_hover_effect: 'true'
+    card_hover_effect: 'true',
+    
+    // Screen management button icons
+    screen_view_data_icon: '',
+    screen_edit_icon: '',
+    screen_unbind_icon: ''
   });
   // Super admin settings (from AdminSettings.js)
   const [adminSettings, setAdminSettings] = useState({
@@ -261,6 +267,7 @@ const CloudUICustomization = () => {
       else if (type === 'map_marker_online') setUploadingMapMarkerOnline(true);
       else if (type === 'map_marker_offline') setUploadingMapMarkerOffline(true);
       else if (type.startsWith('button_')) setUploadingButtonImage(type);
+      else if (type.startsWith('screen_')) setUploadingButtonImage(type);
 
       const response = await api.uploadUIAsset(formData);
       
@@ -275,6 +282,9 @@ const CloudUICustomization = () => {
         const updatedButtonImages = { ...customButtonImages, [buttonType]: response.data.url };
         setCustomButtonImages(updatedButtonImages);
         handleInputChange('custom_button_images', JSON.stringify(updatedButtonImages));
+      } else if (type.startsWith('screen_')) {
+        // Handle screen management icon uploads
+        handleInputChange(type, response.data.url);
       } else {
         handleInputChange(`${type}_url`, response.data.url);
         
@@ -300,7 +310,7 @@ const CloudUICustomization = () => {
       else if (type === 'background') setUploadingBackground(false);
       else if (type === 'map_marker_online') setUploadingMapMarkerOnline(false);
       else if (type === 'map_marker_offline') setUploadingMapMarkerOffline(false);
-      else if (type.startsWith('button_')) setUploadingButtonImage('');
+      else if (type.startsWith('button_') || type.startsWith('screen_')) setUploadingButtonImage('');
     }
   };
 
@@ -362,6 +372,7 @@ const CloudUICustomization = () => {
         nav_position: 'top',
         nav_color: '#667eea',
         nav_hover_color: '#5a6fd8',
+        header_text_color: '#ffffff',
         
         // Advanced button customization
         button_style: 'default',
@@ -398,7 +409,12 @@ const CloudUICustomization = () => {
         // Card and component styling
         card_shadow: 'true',
         card_border: 'true',
-        card_hover_effect: 'true'
+        card_hover_effect: 'true',
+        
+        // Screen management button icons
+        screen_view_data_icon: '',
+        screen_edit_icon: '',
+        screen_unbind_icon: ''
       };
       
       setUiSettings(defaultSettings);
@@ -534,6 +550,29 @@ const CloudUICustomization = () => {
             </div>
             <small style={{ color: '#666' }}>
               This color will be applied to the header background
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Header Text Color</label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={uiSettings.header_text_color}
+                onChange={(e) => handleInputChange('header_text_color', e.target.value)}
+                style={{ width: '50px', height: '40px', border: 'none', borderRadius: '4px' }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                value={uiSettings.header_text_color}
+                onChange={(e) => handleInputChange('header_text_color', e.target.value)}
+                placeholder="#ffffff"
+                style={{ flex: 1 }}
+              />
+            </div>
+            <small style={{ color: '#666' }}>
+              This color will be applied to the header menu text and logo
             </small>
           </div>
         </div>
@@ -693,6 +732,117 @@ const CloudUICustomization = () => {
         </div>
       </div>
 
+      {/* Screen Management Button Icons */}
+      <div className="card">
+        <h2>Screen Management Button Icons</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Upload custom icons to replace the default button icons in the Manage Screens page. 
+          These icons will appear on each screen's action buttons.
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
+          {[
+            { key: 'screen_view_data_icon', label: 'View Data Icon', description: 'Icon for the view data button (📊)', defaultIcon: '📊' },
+            { key: 'screen_edit_icon', label: 'Edit Name Icon', description: 'Icon for the edit name button (✏️)', defaultIcon: '✏️' },
+            { key: 'screen_unbind_icon', label: 'Unbind Screen Icon', description: 'Icon for the unbind screen button (🔗❌)', defaultIcon: '🔗❌' }
+          ].map((iconConfig) => (
+            <div key={iconConfig.key} className="form-group">
+              <label className="form-label">{iconConfig.label}</label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e.target.files[0], iconConfig.key)}
+                    disabled={uploadingButtonImage === iconConfig.key}
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={uiSettings[iconConfig.key] || ''}
+                    onChange={(e) => handleInputChange(iconConfig.key, e.target.value)}
+                    placeholder={`${iconConfig.label} URL`}
+                    disabled={uploadingButtonImage === iconConfig.key}
+                  />
+                  <small style={{ color: '#666' }}>
+                    {iconConfig.description}. Upload an image or enter URL.
+                  </small>
+                </div>
+                {uiSettings[iconConfig.key] ? (
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    border: '1px solid #ddd', 
+                    borderRadius: '4px', 
+                    overflow: 'hidden',
+                    backgroundImage: `url(${uiSettings[iconConfig.key]})`,
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center'
+                  }}>
+                    <span style={{ 
+                      fontSize: '10px', 
+                      color: 'transparent',
+                      textShadow: '0 0 3px rgba(0,0,0,0.5)'
+                    }}>
+                      Preview
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    border: '1px solid #ddd', 
+                    borderRadius: '4px',
+                    fontSize: '16px'
+                  }}>
+                    {iconConfig.defaultIcon}
+                  </div>
+                )}
+              </div>
+              {uploadingButtonImage === iconConfig.key && (
+                <div style={{ color: '#666', fontSize: '14px' }}>
+                  Uploading {iconConfig.label.toLowerCase()}...
+                </div>
+              )}
+              {uiSettings[iconConfig.key] && (
+                <div style={{ marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    className="button button-small"
+                    style={{ 
+                      background: uiSettings[iconConfig.key] ? 
+                        `url(${uiSettings[iconConfig.key]}) center/contain no-repeat` : 
+                        undefined,
+                      color: uiSettings[iconConfig.key] ? 'transparent' : undefined,
+                      minHeight: '32px',
+                      minWidth: '80px'
+                    }}
+                  >
+                    {iconConfig.label} Preview
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-danger button-small"
+                    onClick={() => handleInputChange(iconConfig.key, '')}
+                    style={{ marginLeft: '10px' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="card">
         <h2>Color Preview</h2>
         <div style={{ display: 'grid', gap: '20px' }}>
@@ -700,13 +850,18 @@ const CloudUICustomization = () => {
             <h4>Header Preview</h4>
             <div style={{ 
               background: uiSettings.header_color || '#667eea', 
-              color: 'white', 
+              color: uiSettings.header_text_color || '#ffffff', 
               padding: '15px', 
               borderRadius: '8px' 
             }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                 {uiSettings.app_name || 'LXCloud'}
               </span>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '15px' }}>
+                <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Dashboard</span>
+                <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Manage Screens</span>
+                <span style={{ color: uiSettings.header_text_color || '#ffffff' }}>Admin Panel</span>
+              </div>
             </div>
           </div>
           

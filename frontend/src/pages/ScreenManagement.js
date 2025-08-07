@@ -108,7 +108,7 @@ const ScreenManagement = () => {
   }
 
   return (
-    <div className="container">
+    <div className="container screen-management">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ color: '#333' }}>Screen Management</h1>
         {selectedScreens.size > 0 && (
