@@ -43,6 +43,7 @@ export const ThemeProvider = ({ children }) => {
     nav_position: 'top',
     nav_color: '#667eea',
     nav_hover_color: '#5a6fd8',
+    header_text_color: '#ffffff',
     
     // Advanced button customization
     button_style: 'default',
@@ -79,7 +80,12 @@ export const ThemeProvider = ({ children }) => {
     // Card and component styling
     card_shadow: 'true',
     card_border: 'true',
-    card_hover_effect: 'true'
+    card_hover_effect: 'true',
+    
+    // Screen management button icons
+    screen_view_data_icon: '',
+    screen_edit_icon: '',
+    screen_unbind_icon: ''
   });
   const [loading, setLoading] = useState(true);
 
@@ -152,13 +158,21 @@ export const ThemeProvider = ({ children }) => {
         ${themeData.header_sticky === 'true' ? 'position: sticky !important; top: 0 !important; z-index: 1000 !important;' : ''}
       }
 
+      .header .logo {
+        color: ${themeData.header_text_color || '#ffffff'} !important;
+      }
+
+      .user-dropdown-trigger {
+        color: ${themeData.header_text_color || '#ffffff'} !important;
+      }
+
       /* Navigation Styling */
       .nav-links {
         ${themeData.nav_position === 'side' ? 'flex-direction: column !important;' : ''}
       }
 
       .nav-link {
-        color: ${themeData.nav_color || '#667eea'} !important;
+        color: ${themeData.header_text_color || '#ffffff'} !important;
         ${themeData.nav_style === 'pills' ? 'border-radius: 20px !important; background: rgba(255,255,255,0.1) !important;' : ''}
         ${themeData.nav_style === 'underline' ? 'border-bottom: 2px solid transparent !important;' : ''}
       }
@@ -300,6 +314,30 @@ export const ThemeProvider = ({ children }) => {
         box-shadow: 0 4px 15px rgba(${hexToRgb(themeData.button_color || '#667eea')}, 0.4) !important;
       }
     `;
+
+    // Add screen management button icon styles
+    const screenIcons = {
+      'view-data': themeData.screen_view_data_icon,
+      'edit': themeData.screen_edit_icon,
+      'unbind': themeData.screen_unbind_icon
+    };
+
+    Object.entries(screenIcons).forEach(([actionType, iconUrl]) => {
+      if (iconUrl) {
+        css += `
+          .screen-management .actions button[title*="${actionType === 'view-data' ? 'View Data' : 
+                                                      actionType === 'edit' ? 'Edit Name' : 
+                                                      'Unbind'}"] {
+            background: url('${iconUrl}') center/contain no-repeat !important;
+            background-size: 20px 20px !important;
+            color: transparent !important;
+            text-shadow: none !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+          }
+        `;
+      }
+    });
 
     // Add custom button image styles
     Object.entries(customButtonImages).forEach(([buttonClass, imageUrl]) => {
