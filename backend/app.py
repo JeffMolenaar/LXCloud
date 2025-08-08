@@ -1354,14 +1354,38 @@ def unbind_screen(screen_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Verify screen belongs to user (or user is admin)
-        cursor.execute("""
-            SELECT s.serial_number, s.latitude, s.longitude, s.online_status, s.last_seen,
-                   u.username, u.is_admin, u.is_administrator
-            FROM screens s
-            JOIN users u ON s.user_id = u.id
-            WHERE s.id = %s AND (s.user_id = %s OR u.is_admin = TRUE OR u.is_administrator = TRUE)
-        """, (screen_id, session['user_id']))
+        # First check if current user is admin
+        cursor.execute(
+            "SELECT is_admin, is_administrator FROM users WHERE id = %s",
+            (session['user_id'],)
+        )
+        current_user = cursor.fetchone()
+        if not current_user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        is_current_user_admin = current_user[0] or current_user[1]
+        
+        # Get screen data and verify access
+        if is_current_user_admin:
+            # Admin can unbind any screen
+            cursor.execute("""
+                SELECT s.serial_number, s.latitude, s.longitude, s.online_status, s.last_seen,
+                       u.username
+                FROM screens s
+                JOIN users u ON s.user_id = u.id
+                WHERE s.id = %s
+            """, (screen_id,))
+        else:
+            # Regular user can only unbind their own screens
+            cursor.execute("""
+                SELECT s.serial_number, s.latitude, s.longitude, s.online_status, s.last_seen,
+                       u.username
+                FROM screens s
+                JOIN users u ON s.user_id = u.id
+                WHERE s.id = %s AND s.user_id = %s
+            """, (screen_id, session['user_id']))
         
         screen_data = cursor.fetchone()
         if not screen_data:
@@ -1369,7 +1393,7 @@ def unbind_screen(screen_id):
             conn.close()
             return jsonify({'error': 'Screen not found or access denied'}), 404
         
-        serial_number, latitude, longitude, online_status, last_seen, owner_username, is_admin, is_administrator = screen_data
+        serial_number, latitude, longitude, online_status, last_seen, owner_username = screen_data
         
         # Move screen back to controllers table as unassigned
         cursor.execute("""
@@ -1773,6 +1797,59 @@ def admin_reset_user_password(user_id):
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Password reset failed: {str(e)}'}), 500
+
+@app.route('/api/admin/users/<int:user_id>/disable-2fa', methods=['POST'])
+def admin_disable_user_2fa(user_id):
+    """Disable 2FA for a user (super admin only)"""
+    # Check if current user is super admin (not just admin/administrator)
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if current user is super admin
+        cursor.execute("SELECT is_admin FROM users WHERE id = %s", (session['user_id'],))
+        current_user = cursor.fetchone()
+        if not current_user or not current_user[0]:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Super admin access required'}), 403
+        
+        # Check if target user exists
+        cursor.execute("SELECT username, two_fa_enabled FROM users WHERE id = %s", (user_id,))
+        target_user = cursor.fetchone()
+        if not target_user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
+        
+        username, two_fa_enabled = target_user
+        
+        if not two_fa_enabled:
+            cursor.close()
+            conn.close()
+            return jsonify({'message': f'2FA is already disabled for user {username}'}), 200
+        
+        # Disable 2FA for the user
+        cursor.execute(
+            "UPDATE users SET two_fa_enabled = FALSE, two_fa_secret = NULL WHERE id = %s",
+            (user_id,)
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'2FA has been disabled for user {username}'
+        }), 200
+        
+    except pymysql.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to disable 2FA: {str(e)}'}), 500
 
 @app.route('/api/admin/users/<int:user_id>/delete', methods=['DELETE'])
 def admin_delete_user(user_id):
