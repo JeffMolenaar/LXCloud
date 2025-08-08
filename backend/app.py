@@ -1294,11 +1294,33 @@ def update_screen(screen_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Verify screen belongs to user
+    # Check if current user is admin
     cursor.execute(
-        "SELECT id FROM screens WHERE id = %s AND user_id = %s",
-        (screen_id, session['user_id'])
+        "SELECT is_admin, is_administrator FROM users WHERE id = %s",
+        (session['user_id'],)
     )
+    current_user = cursor.fetchone()
+    if not current_user:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'User not found'}), 404
+    
+    is_current_user_admin = current_user[0] or current_user[1]
+    
+    # Verify screen access - admin can update any screen, regular users only their own
+    if is_current_user_admin:
+        # Admin can update any screen
+        cursor.execute(
+            "SELECT id FROM screens WHERE id = %s",
+            (screen_id,)
+        )
+    else:
+        # Regular user can only update their own screens
+        cursor.execute(
+            "SELECT id FROM screens WHERE id = %s AND user_id = %s",
+            (screen_id, session['user_id'])
+        )
+    
     if not cursor.fetchone():
         cursor.close()
         conn.close()
@@ -1325,11 +1347,33 @@ def delete_screen(screen_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Verify screen belongs to user
+    # Check if current user is admin
     cursor.execute(
-        "SELECT id FROM screens WHERE id = %s AND user_id = %s",
-        (screen_id, session['user_id'])
+        "SELECT is_admin, is_administrator FROM users WHERE id = %s",
+        (session['user_id'],)
     )
+    current_user = cursor.fetchone()
+    if not current_user:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'User not found'}), 404
+    
+    is_current_user_admin = current_user[0] or current_user[1]
+    
+    # Verify screen access - admin can delete any screen, regular users only their own
+    if is_current_user_admin:
+        # Admin can delete any screen
+        cursor.execute(
+            "SELECT id FROM screens WHERE id = %s",
+            (screen_id,)
+        )
+    else:
+        # Regular user can only delete their own screens
+        cursor.execute(
+            "SELECT id FROM screens WHERE id = %s AND user_id = %s",
+            (screen_id, session['user_id'])
+        )
+    
     if not cursor.fetchone():
         cursor.close()
         conn.close()
@@ -1396,9 +1440,17 @@ def unbind_screen(screen_id):
         serial_number, latitude, longitude, online_status, last_seen, owner_username = screen_data
         
         # Move screen back to controllers table as unassigned
+        # Use ON DUPLICATE KEY UPDATE to handle case where controller already exists
         cursor.execute("""
             INSERT INTO controllers (serial_number, registration_key, latitude, longitude, online_status, last_seen, assigned)
             VALUES (%s, %s, %s, %s, %s, %s, FALSE)
+            ON DUPLICATE KEY UPDATE
+                registration_key = VALUES(registration_key),
+                latitude = VALUES(latitude),
+                longitude = VALUES(longitude),
+                online_status = VALUES(online_status),
+                last_seen = VALUES(last_seen),
+                assigned = FALSE
         """, (
             serial_number,
             f'regenerated-{secrets.token_hex(8)}',
@@ -1433,11 +1485,33 @@ def get_screen_data(screen_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Verify screen belongs to user
+    # Check if current user is admin
     cursor.execute(
-        "SELECT id FROM screens WHERE id = %s AND user_id = %s",
-        (screen_id, session['user_id'])
+        "SELECT is_admin, is_administrator FROM users WHERE id = %s",
+        (session['user_id'],)
     )
+    current_user = cursor.fetchone()
+    if not current_user:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'User not found'}), 404
+    
+    is_current_user_admin = current_user[0] or current_user[1]
+    
+    # Verify screen access - admin can access any screen, regular users only their own
+    if is_current_user_admin:
+        # Admin can access any screen
+        cursor.execute(
+            "SELECT id FROM screens WHERE id = %s",
+            (screen_id,)
+        )
+    else:
+        # Regular user can only access their own screens
+        cursor.execute(
+            "SELECT id FROM screens WHERE id = %s AND user_id = %s",
+            (screen_id, session['user_id'])
+        )
+    
     if not cursor.fetchone():
         cursor.close()
         conn.close()
