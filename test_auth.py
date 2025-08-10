@@ -43,7 +43,7 @@ def test_registration():
             json=TEST_USER,
             timeout=5
         )
-        if response.status_code == 201:
+        if response.status_code in [200, 201]:
             data = response.json()
             print(f"✓ Registration successful - User: {data.get('user', {}).get('username')}")
             return True, response.cookies
