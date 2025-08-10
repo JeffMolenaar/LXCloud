@@ -165,6 +165,7 @@ def verify_2fa_token(secret, token):
 def enable_2fa_for_user(user_id, secret):
     """Enable 2FA for a user"""
     try:
+        from modules.database import execute_query
         execute_query(
             "UPDATE users SET two_fa_enabled = TRUE, two_fa_secret = %s WHERE id = %s",
             (secret, user_id)
@@ -177,6 +178,7 @@ def enable_2fa_for_user(user_id, secret):
 def disable_2fa_for_user(user_id):
     """Disable 2FA for a user"""
     try:
+        from modules.database import execute_query
         execute_query(
             "UPDATE users SET two_fa_enabled = FALSE, two_fa_secret = NULL WHERE id = %s",
             (user_id,)
@@ -210,6 +212,7 @@ def get_current_user():
 def is_first_user():
     """Check if this is the first user (for admin setup)"""
     try:
+        from modules.database import execute_query
         count = execute_query("SELECT COUNT(*) as count FROM users", fetch_one=True)
         return count['count'] == 0
     except:
@@ -227,6 +230,7 @@ def logout_user():
 def change_user_password(user_id, new_password):
     """Change user password"""
     try:
+        from modules.database import execute_query
         password_hash = hash_password(new_password)
         execute_query(
             "UPDATE users SET password_hash = %s WHERE id = %s",
