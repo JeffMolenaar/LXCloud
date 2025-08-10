@@ -132,7 +132,7 @@ def generate_registration_key():
     return secrets.token_urlsafe(32)
 
 # Application version
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.1.3.0"
 DATABASE_VERSION = 4
 
 def get_database_version():
