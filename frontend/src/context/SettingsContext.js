@@ -14,8 +14,8 @@ export const useSettings = () => {
 export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState({
     logoUrl: null,
-    logoText: 'LXCloud',
-    siteName: 'LXCloud - LED Screen Management Platform',
+    logoText: 'MultiSign Portaal',
+    siteName: 'MultiSign Portaal - Screen Management Platform',
     faviconUrl: null,
     mapMarkerOnline: null,
     mapMarkerOffline: null
