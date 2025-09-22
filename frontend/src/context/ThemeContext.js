@@ -14,7 +14,7 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState({
     // Original settings
-    app_name: 'LXCloud',
+    app_name: 'MultiSign Portaal',
     primary_color: '#667eea',
     secondary_color: '#f093fb',
     header_color: '#667eea',
@@ -27,7 +27,7 @@ export const ThemeProvider = ({ children }) => {
     
     // Footer customization
     footer_enabled: 'true',
-    footer_text: 'Powered by LXCloud',
+    footer_text: 'MultiSign Portaal - Screen Management Platform',
     footer_color: '#f8f9fa',
     footer_text_color: '#6c757d',
     footer_links: '{}',
